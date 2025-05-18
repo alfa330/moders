@@ -378,11 +378,25 @@
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
             z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         body.dark .counter {
             background-color: var(--button-bg);
             color: #fff;
+        }
+
+        .add-button {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 24px;
         }
 
         .sidebar-toggle {
@@ -512,7 +526,7 @@
             <div class="column" id="deferred" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <h2>Отложенные</h2>
                 <div class="list" id="deferredList"></div>
-                <div class="counter" id="deferredCount">0</div>
+                <div class="counter" id="deferredCount">0 <button class="add-button" onclick="addSingleDeferredButton()" aria-label="Добавить кнопку в отложенные">+</button></div>
             </div>
         </div>
 
@@ -692,6 +706,27 @@
             updateCounters();
             saveColumnState();
             showNotification('Кнопки добавлены!');
+        }
+
+        function addSingleDeferredButton() {
+            const buttonNumber = prompt('Введите номер кнопки для добавления в Отложенные:');
+            const num = parseInt(buttonNumber);
+            if (!buttonNumber || isNaN(num) || num < 1) {
+                showNotification('Введите корректный положительный номер кнопки!');
+                return;
+            }
+            const buttonId = `button-${num}`;
+            if (document.getElementById(buttonId)) {
+                showNotification('Кнопка с таким номером уже существует!');
+                return;
+            }
+            const deferredList = document.getElementById('deferredList');
+            const button = createButton(buttonId, num, 'deferred');
+            deferredList.appendChild(button);
+            addTimerToButton(button);
+            updateCounters();
+            saveColumnState();
+            showNotification(`Кнопка ${num} добавлена в Отложенные!`);
         }
 
         function addTimerToButton(button, customDuration = null) {
@@ -928,7 +963,13 @@
 
         function updateCounters() {
             ['pending', 'completed', 'deferred'].forEach(id => {
-                document.getElementById(id + 'Count').textContent = document.getElementById(id + 'List').children.length;
+                const countElement = document.getElementById(id + 'Count');
+                const count = document.getElementById(id + 'List').children.length;
+                if (id === 'deferred') {
+                    countElement.childNodes[0].textContent = count;
+                } else {
+                    countElement.textContent = count;
+                }
             });
         }
 
