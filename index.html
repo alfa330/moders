@@ -1,4 +1,4 @@
-<script type="text/javascript">
+езхд<script type="text/javascript">
         var gk_isXlsx = false;
         var gk_xlsxFileLookup = {};
         var gk_fileData = {};
@@ -408,7 +408,7 @@
         .sidebar-toggle {
             position: fixed;
             top: 35px;
-            left: 10px;
+            left: 0px;
             width: 50px;
             height: 50px;
             display: flex;
@@ -417,12 +417,18 @@
             font-size: 24px;
             z-index: 1100;
             padding: 0;
+          	transition: left 0.3s ease-in-out;
+          	border-radius: 0 10px 10px 0;
         }
+      
+      	.sidebar-toggle.open {
+      		left: 300px;
+      }
 
         .sidebar {
             position: fixed;
             top: 0;
-            left: -400px;
+            left: -300px;
             width: 300px;
             height: 100%;
             background: var(--column-bg);
@@ -502,11 +508,31 @@
             .sidebar.open { left: 0; }
             .sidebar-toggle { width: 40px; height: 40px; font-size: 20px; }
         }
+      
+      	::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--column-bg);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--button-bg);
+            border-radius: 10px;
+            border: 2px solid var(--column-bg); /* for padding-like effect */
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--button-hover);
+        }
     </style>
 </head>
 <body>
     <div class="petals" id="petals"></div>
-    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Открыть меню разделения кнопок">📝</button>
+    <button class="sidebar-toggle" id="sidebartoggle2" onclick="toggleSidebar()" aria-label="Открыть меню разделения кнопок">📝</button>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-content">
             <h3 class="text-lg font-semibold mb-2" style="text-align: center;">Тикето-дробилка</h3>
@@ -627,7 +653,9 @@
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
+        	const sidebartoggle = document.getElementById('sidebartoggle2');
             sidebar.classList.toggle('open');
+          	sidebartoggle.classList.toggle('open');
         }
 
         window.onload = function () {
