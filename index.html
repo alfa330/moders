@@ -419,6 +419,10 @@
             padding: 0;
         }
 
+        .sidebar-toggle.open {
+            left: 300px
+        }
+
         .sidebar {
             position: fixed;
             top: 0;
@@ -627,7 +631,9 @@
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebartoggle');
             sidebar.classList.toggle('open');
+            sidebarToggle.classList.toggle('open');
         }
 
         window.onload = function () {
