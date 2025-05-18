@@ -1,4 +1,4 @@
-<html lang="ru"><head><script type="text/javascript">
+<script type="text/javascript">
         var gk_isXlsx = false;
         var gk_xlsxFileLookup = {};
         var gk_fileData = {};
@@ -37,13 +37,13 @@
         }
         return gk_fileData[filename] || "";
         }
-        </script>
-
-
+        </script><!DOCTYPE html>
+<html lang="ru">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Перетаскивание кнопок - Сакура</title>
-    <link rel="icon" href="https://static-00.iconduck.com/assets.00/lightning-icon-512x512-n3mxj05i.png">
+    <link rel="icon" href="https://static-00.iconduck.com/assets.00/lightning-icon-512x512-n3mxj05i.png"/>
     <style>
         :root {
             --bg-color: #fff5f7;
@@ -408,7 +408,7 @@
         .sidebar-toggle {
             position: fixed;
             top: 35px;
-            left: 0px;
+            left: 10px;
             width: 50px;
             height: 50px;
             display: flex;
@@ -417,18 +417,12 @@
             font-size: 24px;
             z-index: 1100;
             padding: 0;
-          	transition: left 0.3s ease-in-out;
-          	border-radius: 0 10px 10px 0;
         }
-      
-      	.sidebar-toggle.open {
-      		left: 300px;
-      	}
 
         .sidebar {
             position: fixed;
             top: 0;
-            left: -300px;
+            left: -400px;
             width: 300px;
             height: 100%;
             background: var(--column-bg);
@@ -510,51 +504,51 @@
         }
     </style>
 </head>
-<body class="dark">
-    <div class="petals" id="petals"><div class="petal" style="left: 91.4974vw; animation-duration: 8.77907s; animation-delay: 1.65361s;"></div><div class="petal" style="left: 17.5124vw; animation-duration: 6.97454s; animation-delay: 0.676574s;"></div><div class="petal" style="left: 39.8752vw; animation-duration: 6.60611s; animation-delay: 0.788142s;"></div><div class="petal" style="left: 10.3724vw; animation-duration: 6.35491s; animation-delay: 0.185366s;"></div><div class="petal" style="left: 27.5368vw; animation-duration: 5.52118s; animation-delay: 1.51078s;"></div><div class="petal" style="left: 93.2528vw; animation-duration: 9.5968s; animation-delay: 0.689187s;"></div><div class="petal" style="left: 29.4378vw; animation-duration: 7.48357s; animation-delay: 1.42476s;"></div><div class="petal" style="left: 12.7667vw; animation-duration: 5.45169s; animation-delay: 0.731437s;"></div><div class="petal" style="left: 67.3464vw; animation-duration: 7.34817s; animation-delay: 4.67388s;"></div><div class="petal" style="left: 0.860448vw; animation-duration: 9.20942s; animation-delay: 0.810267s;"></div><div class="petal" style="left: 41.4259vw; animation-duration: 5.38374s; animation-delay: 3.65873s;"></div><div class="petal" style="left: 36.6061vw; animation-duration: 5.6976s; animation-delay: 3.74153s;"></div><div class="petal" style="left: 29.2341vw; animation-duration: 7.76785s; animation-delay: 3.7134s;"></div><div class="petal" style="left: 83.4701vw; animation-duration: 5.75018s; animation-delay: 3.6521s;"></div><div class="petal" style="left: 72.7077vw; animation-duration: 8.91079s; animation-delay: 3.59783s;"></div><div class="petal" style="left: 82.6945vw; animation-duration: 5.22883s; animation-delay: 1.71191s;"></div><div class="petal" style="left: 84.636vw; animation-duration: 8.58653s; animation-delay: 2.86955s;"></div><div class="petal" style="left: 18.2364vw; animation-duration: 9.9621s; animation-delay: 4.09711s;"></div><div class="petal" style="left: 46.1871vw; animation-duration: 9.06622s; animation-delay: 3.87618s;"></div><div class="petal" style="left: 75.8168vw; animation-duration: 5.11s; animation-delay: 0.121869s;"></div></div>
-    <button class="sidebar-toggle" id="sidebartoggle" onclick="toggleSidebar()" aria-label="Открыть меню разделения кнопок">📝</button>
+<body>
+    <div class="petals" id="petals"></div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Открыть меню разделения кнопок">📝</button>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-content">
             <h3 class="text-lg font-semibold mb-2" style="text-align: center;">Тикето-дробилка</h3>
-            <input id="nameInput" type="text" placeholder="Введите имя" class="w-full mb-2">
+            <input id="nameInput" type="text" placeholder="Введите имя" class="w-full mb-2"/>
             <button onclick="addName()" class="w-full mb-2">Добавить имя</button>
             <h3 class="text-lg font-semibold mb-2"> Список имен</h3>
             <div class="name-list" id="nameList"></div>
             <h3 class="text-lg font-semibold mb-2">Поделить</h3>
-            <input id="startButton" type="number" min="1" placeholder="Начальный номер кнопки" class="w-full mb-2">
+            <input id="startButton" type="number" min="1" placeholder="Начальный номер кнопки" class="w-full mb-2"/>
             <button onclick="divideButtons()" class="w-full mb-2">Поделить</button>
             <h3 class="text-lg font-semibold mb-2">Результат</h3>
-            <textarea id="result" readonly="" class="result-textarea mb-2"></textarea>
+            <textarea id="result" readonly class="result-textarea mb-2"></textarea>
             <button onclick="copyResult()" class="w-full">Скопировать</button>
         </div>
     </div>
     <div class="container">
         <div class="controls">
             <button id="themeToggleBtn" aria-label="Переключить тему">
-                <span id="themeIcon">☀️</span>
+                <span id="themeIcon">🌙</span>
             </button>
-            <input type="number" id="from" min="1" placeholder="С какой кнопки" aria-label="Начальный номер кнопки">
-            <input type="number" id="to" min="1" placeholder="До какой кнопки" aria-label="Конечный номер кнопки">
-            <input type="number" id="step" min="1" placeholder="Шаг" aria-label="Шаг добавления кнопок">
+            <input type="number" id="from" min="1" placeholder="С какой кнопки" aria-label="Начальный номер кнопки"/>
+            <input type="number" id="to" min="1" placeholder="До какой кнопки" aria-label="Конечный номер кнопки"/>
+            <input type="number" id="step" min="1" placeholder="Шаг" aria-label="Шаг добавления кнопок"/>
             <button onclick="addButtons()" aria-label="Добавить кнопки">Добавить кнопки</button>
             <button onclick="openSelectedInTabs()" aria-label="Открыть выбранные">Открыть выбранные</button>
         </div>
 
         <div class="columns">
-            <div class="column dragover" id="pending" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="column" id="pending" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <h2>Выполняемые</h2>
-                <div class="list" id="pendingList"><button id="button-214355" class="pending" draggable="true" aria-label="Кнопка 214355 в колонке pending">Кнопка 214355</button><button id="button-214361" class="pending" draggable="true" aria-label="Кнопка 214361 в колонке pending">Кнопка 214361</button><button id="button-214364" class="pending" draggable="true" aria-label="Кнопка 214364 в колонке pending">Кнопка 214364</button><button id="button-214367" class="pending" draggable="true" aria-label="Кнопка 214367 в колонке pending">Кнопка 214367</button><button id="button-214370" class="pending" draggable="true" aria-label="Кнопка 214370 в колонке pending">Кнопка 214370</button><button id="button-214373" class="pending" draggable="true" aria-label="Кнопка 214373 в колонке pending">Кнопка 214373</button><button id="button-214376" class="pending" draggable="true" aria-label="Кнопка 214376 в колонке pending">Кнопка 214376</button><button id="button-214379" class="pending" draggable="true" aria-label="Кнопка 214379 в колонке pending">Кнопка 214379</button><button id="button-214382" class="pending" draggable="true" aria-label="Кнопка 214382 в колонке pending">Кнопка 214382</button><button id="button-214385" class="pending" draggable="true" aria-label="Кнопка 214385 в колонке pending">Кнопка 214385</button><button id="button-214388" class="pending" draggable="true" aria-label="Кнопка 214388 в колонке pending">Кнопка 214388</button><button id="button-214391" class="pending" draggable="true" aria-label="Кнопка 214391 в колонке pending">Кнопка 214391</button><button id="button-214394" class="pending" draggable="true" aria-label="Кнопка 214394 в колонке pending">Кнопка 214394</button><button id="button-214397" class="pending" draggable="true" aria-label="Кнопка 214397 в колонке pending">Кнопка 214397</button><button id="button-214400" class="pending" draggable="true" aria-label="Кнопка 214400 в колонке pending">Кнопка 214400</button><button id="button-214403" class="pending" draggable="true" aria-label="Кнопка 214403 в колонке pending">Кнопка 214403</button><button id="button-214406" class="pending" draggable="true" aria-label="Кнопка 214406 в колонке pending">Кнопка 214406</button><button id="button-214409" class="pending" draggable="true" aria-label="Кнопка 214409 в колонке pending">Кнопка 214409</button><button id="button-214412" class="pending" draggable="true" aria-label="Кнопка 214412 в колонке pending">Кнопка 214412</button><button id="button-214415" class="pending" draggable="true" aria-label="Кнопка 214415 в колонке pending">Кнопка 214415</button><button id="button-214418" class="pending" draggable="true" aria-label="Кнопка 214418 в колонке pending">Кнопка 214418</button><button id="button-214421" class="pending" draggable="true" aria-label="Кнопка 214421 в колонке pending">Кнопка 214421</button><button id="button-214424" class="pending" draggable="true" aria-label="Кнопка 214424 в колонке pending">Кнопка 214424</button><button id="button-214427" class="pending" draggable="true" aria-label="Кнопка 214427 в колонке pending">Кнопка 214427</button><button id="button-214430" class="pending" draggable="true" aria-label="Кнопка 214430 в колонке pending">Кнопка 214430</button><button id="button-214433" class="pending" draggable="true" aria-label="Кнопка 214433 в колонке pending">Кнопка 214433</button><button id="button-214436" class="pending" draggable="true" aria-label="Кнопка 214436 в колонке pending">Кнопка 214436</button><button id="button-214439" class="pending" draggable="true" aria-label="Кнопка 214439 в колонке pending">Кнопка 214439</button><button id="button-214442" class="pending" draggable="true" aria-label="Кнопка 214442 в колонке pending">Кнопка 214442</button><button id="button-214445" class="pending" draggable="true" aria-label="Кнопка 214445 в колонке pending">Кнопка 214445</button><button id="button-214448" class="pending" draggable="true" aria-label="Кнопка 214448 в колонке pending">Кнопка 214448</button></div>
-                <div class="counter" id="pendingCount">31</div>
+                <div class="list" id="pendingList"></div>
+                <div class="counter" id="pendingCount">0</div>
             </div>
-            <div class="column dragover" id="completed" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="column" id="completed" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <h2>Выполненные</h2>
-                <div class="list" id="completedList"><button id="button-214170" class="completed" draggable="true" aria-label="Кнопка 214170 в колонке completed">Кнопка 214170</button><button id="button-214182" class="completed" draggable="true" aria-label="Кнопка 214182 в колонке completed">Кнопка 214182</button><button id="button-214190" class="completed" draggable="true" aria-label="Кнопка 214190 в колонке completed">Кнопка 214190</button><button id="button-214158" class="completed" draggable="true" aria-label="Кнопка 214158 в колонке completed">Кнопка 214158</button><button id="button-214162" class="completed" draggable="true" aria-label="Кнопка 214162 в колонке completed">Кнопка 214162</button><button id="button-214194" class="completed" draggable="true" aria-label="Кнопка 214194 в колонке completed">Кнопка 214194</button><button id="button-214138" class="completed" draggable="true" aria-label="Кнопка 214138 в колонке completed">Кнопка 214138</button><button id="button-214062" class="completed" draggable="true" aria-label="Кнопка 214062 в колонке completed">Кнопка 214062</button><button id="button-214198" class="completed" draggable="true" aria-label="Кнопка 214198 в колонке completed">Кнопка 214198</button><button id="button-214114" class="completed" draggable="true" aria-label="Кнопка 214114 в колонке completed">Кнопка 214114</button><button id="button-214174" class="completed" draggable="true" aria-label="Кнопка 214174 в колонке completed">Кнопка 214174</button><button id="button-214186" class="completed" draggable="true" aria-label="Кнопка 214186 в колонке completed">Кнопка 214186</button><button id="button-214226" class="completed" draggable="true" aria-label="Кнопка 214226 в колонке completed">Кнопка 214226</button><button id="button-214218" class="completed" draggable="true" aria-label="Кнопка 214218 в колонке completed">Кнопка 214218</button><button id="button-214222" class="completed" draggable="true" aria-label="Кнопка 214222 в колонке completed">Кнопка 214222</button><button id="button-214250" class="completed" draggable="true" aria-label="Кнопка 214250 в колонке completed">Кнопка 214250</button><button id="button-214258" class="completed" draggable="true" aria-label="Кнопка 214258 в колонке completed">Кнопка 214258</button><button id="button-214262" class="completed" draggable="true" aria-label="Кнопка 214262 в колонке completed">Кнопка 214262</button><button id="button-214147" class="completed" draggable="true" aria-label="Кнопка 214147 в колонке completed">Кнопка 214147</button><button id="button-214202" class="completed" draggable="true" aria-label="Кнопка 214202 в колонке completed">Кнопка 214202</button><button id="button-214286" class="completed" draggable="true" aria-label="Кнопка 214286 в колонке completed">Кнопка 214286</button><button id="button-214278" class="completed" draggable="true" aria-label="Кнопка 214278 в колонке completed">Кнопка 214278</button><button id="button-214274" class="completed" draggable="true" aria-label="Кнопка 214274 в колонке completed">Кнопка 214274</button><button id="button-214270" class="completed" draggable="true" aria-label="Кнопка 214270 в колонке completed">Кнопка 214270</button><button id="button-214290" class="completed" draggable="true" aria-label="Кнопка 214290 в колонке completed">Кнопка 214290</button><button id="button-214310" class="completed" draggable="true" aria-label="Кнопка 214310 в колонке completed">Кнопка 214310</button><button id="button-214302" class="completed" draggable="true" aria-label="Кнопка 214302 в колонке completed">Кнопка 214302</button><button id="button-214326" class="completed" draggable="true" aria-label="Кнопка 214326 в колонке completed">Кнопка 214326</button><button id="button-214322" class="completed" draggable="true" aria-label="Кнопка 214322 в колонке completed">Кнопка 214322</button><button id="button-214330" class="completed" draggable="true" aria-label="Кнопка 214330 в колонке completed">Кнопка 214330</button><button id="button-214346" class="completed" draggable="true" aria-label="Кнопка 214346 в колонке completed">Кнопка 214346</button><button id="button-214166" class="completed" draggable="true" aria-label="Кнопка 214166 в колонке deferred">Кнопка 214166</button><button id="button-214210" class="completed" draggable="true" aria-label="Кнопка 214210 в колонке deferred">Кнопка 214210</button></div>
-                <div class="counter" id="completedCount">33</div>
+                <div class="list" id="completedList"></div>
+                <div class="counter" id="completedCount">0</div>
             </div>
             <div class="column" id="deferred" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <h2>Отложенные</h2>
-                <div class="list" id="deferredList"><button id="button-214242" class="deferred" draggable="true" aria-label="Кнопка 214242 в колонке deferred">Кнопка 214242<div class="timer-container"><div class="timer">20:03</div><button class="edit-time-btn" aria-label="Редактировать время">🖋️</button></div></button><button id="button-214254" class="deferred" draggable="true" aria-label="Кнопка 214254 в колонке deferred">Кнопка 214254<div class="timer-container"><div class="timer">34:35</div><button class="edit-time-btn" aria-label="Редактировать время">🖋️</button></div></button><button id="button-214266" class="deferred" draggable="true" aria-label="Кнопка 214266 в колонке deferred">Кнопка 214266<div class="timer-container"><div class="timer">35:06</div><button class="edit-time-btn" aria-label="Редактировать время">🖋️</button></div></button><button id="button-214334" class="deferred" draggable="true" aria-label="Кнопка 214334 в колонке deferred">Кнопка 214334<div class="timer-container"><div class="timer">25:37</div><button class="edit-time-btn" aria-label="Редактировать время">🖋️</button></div></button><button id="button-214294" class="deferred" draggable="true" aria-label="Кнопка 214294 в колонке deferred">Кнопка 214294<div class="timer-container"><div class="timer">45:21</div><button class="edit-time-btn" aria-label="Редактировать время">🖋️</button></div></button><button id="button-214358" class="deferred" draggable="true" aria-label="Кнопка 214358 в колонке pending">Кнопка 214358<div class="timer-container"><div class="timer">12:20</div><button class="edit-time-btn" aria-label="Редактировать время">🖋️</button></div></button></div>
-                <div class="counter" id="deferredCount">6<button class="add-button" onclick="addSingleDeferredButton()" aria-label="Добавить кнопку в отложенные">+</button></div>
+                <div class="list" id="deferredList"></div>
+                <div class="counter" id="deferredCount">0 <button class="add-button" onclick="addSingleDeferredButton()" aria-label="Добавить кнопку в отложенные">+</button></div>
             </div>
         </div>
 
@@ -569,7 +563,7 @@
         Перетащите сюда для удаления
     </div>
 
-    <div class="notification" id="notification" role="alert">Кнопка удалена!</div>
+    <div class="notification" id="notification" role="alert"></div>
 
     <script>
         var gk_isXlsx = false;
@@ -633,9 +627,7 @@
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-        	const sidebartoggle = document.getElementById('sidebartoggle');
             sidebar.classList.toggle('open');
-          	sidebartoggle.classList.toggle('open');
         }
 
         window.onload = function () {
@@ -1093,6 +1085,5 @@
             showNotification('Текст скопирован в буфер обмена!');
         }
     </script>
-
-
-</body></html>
+</body>
+</html>
