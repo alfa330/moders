@@ -437,6 +437,13 @@
             gap: 15px;
         }
 
+        .checkmarkbox {
+            display: flex;
+            
+        }
+
+            
+
         .name-list {
             max-height: 150px;
             overflow-y: auto;
@@ -1016,7 +1023,7 @@
                 const div = document.createElement('div');
                 div.className = 'name-item';
                 div.innerHTML = `
-                    <label class="flex items-center">
+                    <label class="chekmarkbox">
                         <input type="checkbox" class="mr-2" checked>
                         ${name}
                     </label>
