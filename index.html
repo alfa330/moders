@@ -1,4 +1,4 @@
-</script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -623,19 +623,10 @@
     createPetals();
     loadColumnState();
     document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-
-    // Проверка, первый ли это вход
-    if (!localStorage.getItem('firstVisit')) {
-        requestPermissions();
-    }
+    requestPermissions();
 };
 
 function requestPermissions() {
-    // Информирование о всплывающих окнах
-    showNotification(
-        'Для корректной работы приложения разрешите всплывающие окна в настройках вашего браузера.'
-    );
-
     // Тест открытия всплывающего окна для проверки блокировки
     try {
         const testWindow = window.open('', '_blank');
