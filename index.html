@@ -632,7 +632,6 @@ function requestPermissions() {
         const testWindow = window.open('', '_blank');
         if (testWindow) {
             testWindow.close(); // Закрываем тестовое окно
-	    localStorage.setItem('firstVisit', 'true');
         } else {
             showNotification(
                 'Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.'
