@@ -29,20 +29,20 @@
         }
 
         body {
-            background-color: var(--bg-color);
-            background-image: url(''), var(--gradient-light);
-            background-attachment: fixed;
-            background-size: cover, auto;
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            transition: all 0.4s ease-in-out;
-            margin: 0;
-            min-height: 100vh;
-            padding-bottom: 0px;
-            position: relative;
-            overflow-x: hidden;
-	    background: url('https://github.com/alfa330/moders/blob/main/MODERKA%20(1).png?raw=true') center / cover no-repeat;
-        }
+	    --bg-image: url('https://github.com/alfa330/moders/blob/main/MODERKA%20(1).png?raw=true');
+	    background-color: var(--bg-color);
+	    background-image: var(--bg-image), var(--gradient-light, none);
+	    background-attachment: fixed;
+	    background-size: cover, auto;
+	    color: var(--text-color);
+	    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	    transition: all 0.4s ease-in-out;
+	    margin: 0;
+	    min-height: 100vh;
+	    padding-bottom: 0px;
+	    position: relative;
+	    overflow-x: hidden;
+	}
 
         .petals {
             position: fixed;
@@ -313,20 +313,20 @@
             transform: translateY(-2px);
         }
 
-        body.dark {
-            --bg-color: #2f1b24;
-            --text-color: #f4c4ce;
-            --button-bg: #e07b8c;
-            --button-hover: #f8b8c6;
-            --column-bg: rgba(47, 27, 36, 0.9);
-            --border-color: #6b4e5a;
-            --trash-bg: #c62828;
-            --trash-hover: #b71c1c;
-            --notification-bg: #ff6b6b;
-            --gradient-light: var(--gradient-dark);
-            --shadow-light: var(--shadow-dark);
-	    --background: url('https://github.com/alfa330/moders/blob/main/MODERKA.png?raw=true') center / cover no-repeat;
-        }
+	body.dark {
+	    --bg-color: #2f1b24;
+	    --text-color: #f4c4ce;
+	    --button-bg: #e07b8c;
+	    --button-hover: #f8b8c6;
+	    --column-bg: rgba(47, 27, 36, 0.9);
+	    --border-color: #6b4e5a;
+	    --trash-bg: #c62828;
+	    --trash-hover: #b71c1c;
+	    --notification-bg: #ff6b6b;
+	    --gradient-light: var(--gradient-dark, none);
+	    --shadow-light: var(--shadow-dark, none);
+	    --bg-image: url('https://github.com/alfa330/moders/blob/main/MODERKA.png?raw=true');
+	}
 
         .selected {
             outline: 3px solid #ff8c94;
