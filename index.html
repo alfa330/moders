@@ -588,7 +588,7 @@
 
         let selectedButtons = [];
         const timers = new Map();
-        let names = [];
+        let names = ['Руслан', 'Жанасыл', 'Шерзад', 'Нурсерик', 'Азана', 'Асель', 'Анель', 'Балауса', 'Шугыла'];
 
         function toggleTheme() {
             const body = document.body;
@@ -624,6 +624,7 @@
     loadColumnState();
     document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
     requestPermissions();
+    updateNameList();	
 };
 
 function requestPermissions() {
