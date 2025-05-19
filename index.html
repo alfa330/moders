@@ -610,20 +610,49 @@
         }
 
         window.onload = function () {
-            const theme = localStorage.getItem('theme');
-            const body = document.body;
-            const icon = document.getElementById('themeIcon');
-            if (theme === 'dark') {
-                body.classList.add('dark');
-                icon.textContent = '☀️';
-            } else {
-                body.classList.remove('dark');
-                icon.textContent = '🌙';
-            }
-            createPetals();
-            loadColumnState();
-            document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-        };
+    const theme = localStorage.getItem('theme');
+    const body = document.body;
+    const icon = document.getElementById('themeIcon');
+    if (theme === 'dark') {
+        body.classList.add('dark');
+        icon.textContent = '☀️';
+    } else {
+        body.classList.remove('dark');
+        icon.textContent = '🌙';
+    }
+    createPetals();
+    loadColumnState();
+    document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+
+    // Проверка, первый ли это вход
+    if (!localStorage.getItem('firstVisit')) {
+        requestPermissions();
+    }
+};
+
+function requestPermissions() {
+    // Информирование о всплывающих окнах
+    showNotification(
+        'Для корректной работы приложения разрешите всплывающие окна в настройках вашего браузера.'
+    );
+
+    // Тест открытия всплывающего окна для проверки блокировки
+    try {
+        const testWindow = window.open('', '_blank');
+        if (testWindow) {
+            testWindow.close(); // Закрываем тестовое окно
+	    localStorage.setItem('firstVisit', 'true');
+        } else {
+            showNotification(
+                'Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.'
+            );
+        }
+    } catch (e) {
+        showNotification(
+            'Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.'
+        );
+    }
+}
 
         function saveColumnState() {
             ['pending', 'completed', 'deferred'].forEach(columnId => {
