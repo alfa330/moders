@@ -470,6 +470,56 @@
             box-shadow: var(--shadow-light);
         }
 
+        .login-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--column-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: var(--shadow-light);
+            width: 300px;
+            text-align: center;
+        }
+
+        .login-container h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .login-container input {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .login-container button {
+            width: 100%;
+        }
+
+        .user-info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--column-bg);
+            padding: 10px 15px;
+            border-radius: 10px;
+            box-shadow: var(--shadow-light);
+            z-index: 100;
+        }
+
+        .user-info span {
+            font-weight: bold;
+        }
+
+        .user-info button {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
         @media (max-width: 768px) {
             .container { width: 95%; margin: 15px auto; }
             .controls { flex-direction: column; align-items: center; padding: 10px; }
@@ -482,6 +532,8 @@
             .sidebar { width: 250px; }
             .sidebar.open { left: 0; }
             .sidebar-toggle { width: 40px; height: 40px; font-size: 20px; }
+            .login-container { width: 90%; padding: 20px; }
+            .user-info { top: 10px; right: 10px; flex-direction: column; gap: 5px; padding: 8px; }
         }
       
       	::-webkit-scrollbar {
@@ -911,9 +963,10 @@
 
             if (!loggedIn) {
                 return (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '10px' }}>
-                        <input type="text" value={loginValue} onChange={(e) => setLoginValue(e.target.value)} placeholder="Login" />
-                        <input type="password" value={passwordValue} onChange={(e) => setPasswordValue(e.target.value)} placeholder="Password" />
+                    <div className="login-container">
+                        <h2>Вход в аккаунт</h2>
+                        <input type="text" value={loginValue} onChange={(e) => setLoginValue(e.target.value)} placeholder="Логин" />
+                        <input type="password" value={passwordValue} onChange={(e) => setPasswordValue(e.target.value)} placeholder="Пароль" />
                         <button onClick={handleLogin}>Войти</button>
                         <div className={`notification ${notification.show ? 'show' : ''}`}>{notification.message}</div>
                     </div>
@@ -949,6 +1002,12 @@
                             <button onClick={copyResult}>Скопировать</button>
                         </div>
                     </div>
+                    {userData && (
+                        <div className="user-info">
+                            <span>{userData.name}</span>
+                            <button onClick={handleLogout}>Выйти</button>
+                        </div>
+                    )}
                     <div className="container">
                         <div className="controls">
                             <button onClick={toggleTheme} aria-label="Переключить тему">
@@ -959,8 +1018,6 @@
                             <input type="number" value={stepValue} onChange={(e) => setStepValue(e.target.value)} placeholder="Шаг" />
                             <button onClick={addButtons} aria-label="Добавить кнопки">Добавить кнопки</button>
                             <button onClick={openSelectedInTabs} aria-label="Открыть выбранные">Открыть выбранные</button>
-                            <button onClick={handleLogout}>Выйти</button>
-                            {userData && <span>Добро пожаловать, {userData.name}</span>}
                         </div>
                         <div className="columns">
                             {['pending', 'completed', 'deferred'].map(column => (
