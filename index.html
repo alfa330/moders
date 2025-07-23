@@ -514,576 +514,492 @@
     </style>
 </head>
 <body>
-    <div class="petals" id="petals"></div>
-    <button class="sidebar-toggle" id="sidebartoggle2" onclick="toggleSidebar()" aria-label="Открыть меню разделения кнопок">📝</button>
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-content">
-            <h3 class="text-lg font-semibold mb-2" style="text-align: center;">Тикето-дробилка</h3>
-            <input id="nameInput" type="text" placeholder="Введите имя" class="w-full mb-2"/>
-            <button onclick="addName()" class="w-full mb-2">Добавить имя</button>
-            <h3 class="text-lg font-semibold mb-2"> Список имен</h3>
-            <div class="name-list" id="nameList"></div>
-            <h3 class="text-lg font-semibold mb-2">Поделить</h3>
-            <input id="startButton" type="number" min="1" placeholder="Начальный номер кнопки" class="w-full mb-2"/>
-            <button onclick="divideButtons()" class="w-full mb-2">Поделить</button>
-            <h3 class="text-lg font-semibold mb-2">Результат</h3>
-            <textarea id="result" readonly class="result-textarea mb-2"></textarea>
-            <button onclick="copyResult()" class="w-full">Скопировать</button>
-        </div>
-    </div>
-    <div class="container">
-        <div class="controls">
-            <button id="themeToggleBtn" aria-label="Переключить тему">
-                <span id="themeIcon">🌙</span>
-            </button>
-            <input type="number" id="from" min="1" placeholder="С какой кнопки" aria-label="Начальный номер кнопки"/>
-            <input type="number" id="to" min="1" placeholder="До какой кнопки" aria-label="Конечный номер кнопки"/>
-            <input type="number" id="step" min="1" placeholder="Шаг" aria-label="Шаг добавления кнопок"/>
-            <button onclick="addButtons()" aria-label="Добавить кнопки">Добавить кнопки</button>
-            <button onclick="openSelectedInTabs()" aria-label="Открыть выбранные">Открыть выбранные</button>
-        </div>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-        <div class="columns">
-            <div class="column" id="pending" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <h2>Выполняемые</h2>
-                <div class="list" id="pendingList"></div>
-                <div class="counter" id="pendingCount">0</div>
-            </div>
-            <div class="column" id="completed" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <h2>Выполненные</h2>
-                <div class="list" id="completedList"></div>
-                <div class="counter" id="completedCount">0</div>
-            </div>
-            <div class="column" id="deferred" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <h2>Отложенные</h2>
-                <div class="list" id="deferredList"></div>
-                <div class="counter" id="deferredCount">0 <button class="add-button" onclick="addSingleDeferredButton()" aria-label="Добавить кнопку в отложенные">+</button></div>
-            </div>
-        </div>
+        const API_BASE_URL = "https://otp-2-fos4.onrender.com";
 
-        <div class="clear-btn-container">
-            <button class="clear-btn" onclick="clearColumn('pending')" aria-label="Очистить выполняемые">Очистить Выполняемые</button>
-            <button class="clear-btn" onclick="clearColumn('completed')" aria-label="Очистить выполненные">Очистить Выполненные</button>
-            <button class="clear-btn" onclick="clearColumn('deferred')" aria-label="Очистить отложенные">Очистить Отложенные</button>
-        </div>
-    </div>
+        const App = () => {
+            const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+            const [sidebarOpen, setSidebarOpen] = useState(false);
+            const [names, setNames] = useState(['Руслан', 'Жанасыл', 'Шерзад', 'Нурсерик', 'Азана', 'Асель', 'Анель', 'Балауса', 'Шугыла', 'Алуа']);
+            const [buttons, setButtons] = useState({ pending: [], completed: [], deferred: [] });
+            const [selectedButtons, setSelectedButtons] = useState([]);
+            const [notification, setNotification] = useState({ message: '', show: false });
+            const [fromValue, setFromValue] = useState('');
+            const [toValue, setToValue] = useState('');
+            const [stepValue, setStepValue] = useState('');
+            const [nameInput, setNameInput] = useState('');
+            const [startButton, setStartButton] = useState('');
+            const [result, setResult] = useState('');
+            const timersRef = useRef(new Map());
+            const petalsRef = useRef(null);
+            const [loggedIn, setLoggedIn] = useState(false);
+            const [userData, setUserData] = useState(null);
+            const [loginValue, setLoginValue] = useState('');
+            const [passwordValue, setPasswordValue] = useState('');
 
-    <div class="trash-bin" id="trashBin" ondragover="allowTrashDrop(event)" ondrop="dropInTrash(event)">
-        Перетащите сюда для удаления
-    </div>
+            useEffect(() => {
+                document.body.classList.toggle('dark', theme === 'dark');
+            }, [theme]);
 
-    <div class="notification" id="notification" role="alert"></div>
+            useEffect(() => {
+                createPetals();
+                loadColumnState();
+                requestPermissions();
+                const storedUser = localStorage.getItem('userData');
+                if (storedUser) {
+                    setUserData(JSON.parse(storedUser));
+                    setLoggedIn(true);
+                }
+            }, []);
 
-    <script>
-        function createPetals() {
-            const petalsContainer = document.getElementById('petals');
-            for (let i = 0; i < 20; i++) {
-                const petal = document.createElement('div');
-                petal.classList.add('petal');
-                petal.style.left = `${Math.random() * 100}vw`;
-                petal.style.animationDuration = `${Math.random() * 5 + 5}s`;
-                petal.style.animationDelay = `${Math.random() * 5}s`;
-                petalsContainer.appendChild(petal);
-            }
-        }
-
-        let selectedButtons = [];
-        const timers = new Map();
-        let names = ['Руслан', 'Жанасыл', 'Шерзад', 'Нурсерик', 'Азана', 'Асель', 'Анель', 'Балауса', 'Шугыла', 'Алуа'];
-
-        function toggleTheme() {
-            const body = document.body;
-            const isDark = body.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            const icon = document.getElementById('themeIcon');
-            icon.style.opacity = 0;
-            setTimeout(() => {
-                icon.textContent = isDark ? '☀️' : '🌙';
-                icon.style.opacity = 1;
-            }, 150);
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-        	const sidebartoggle = document.getElementById('sidebartoggle2');
-            sidebar.classList.toggle('open');
-          	sidebartoggle.classList.toggle('open');
-        }
-
-        window.onload = function () {
-    const theme = localStorage.getItem('theme');
-    const body = document.body;
-    const icon = document.getElementById('themeIcon');
-    if (theme === 'dark') {
-        body.classList.add('dark');
-        icon.textContent = '☀️';
-    } else {
-        body.classList.remove('dark');
-        icon.textContent = '🌙';
-    }
-    createPetals();
-    loadColumnState();
-    document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-    requestPermissions();
-    updateNameList();	
-};
-
-function requestPermissions() {
-    // Тест открытия всплывающего окна для проверки блокировки
-    try {
-        const testWindow = window.open('', '_blank');
-        if (testWindow) {
-            testWindow.close(); // Закрываем тестовое окно
-        } else {
-            showNotification(
-                'Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.'
-            );
-        }
-    } catch (e) {
-        showNotification(
-            'Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.'
-        );
-    }
-}
-
-        function saveColumnState() {
-            ['pending', 'completed', 'deferred'].forEach(columnId => {
-                const list = document.getElementById(`${columnId}List`);
-                const buttons = Array.from(list.children).map(button => button.id);
-                localStorage.setItem(`${columnId}Buttons`, JSON.stringify(buttons));
-            });
-        }
-
-        function loadColumnState() {
-            ['pending', 'completed', 'deferred'].forEach(columnId => {
-                const buttonIds = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
-                const list = document.getElementById(`${columnId}List`);
-                buttonIds.forEach(buttonId => {
-                    let button = document.getElementById(buttonId);
-                    const idNum = buttonId.split('-')[1];
-                    if (!button) {
-                        button = createButton(buttonId, idNum, columnId);
+            const handleLogin = async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ login: loginValue, password: passwordValue })
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        setUserData(data);
+                        setLoggedIn(true);
+                        localStorage.setItem('userData', JSON.stringify(data));
+                        showNotification('Login successful!');
+                    } else {
+                        showNotification(data.error || 'Invalid credentials');
                     }
-                    list.appendChild(button);
-                    if (columnId === 'deferred') {
-                        const endTime = localStorage.getItem(`timer_${buttonId}`);
-                        if (endTime) {
-                            const remaining = Math.floor((parseInt(endTime) - Date.now()) / 1000);
-                            if (remaining > 0) {
-                                addTimerToButton(button, remaining);
-                            } else {
-                                localStorage.removeItem(`timer_${buttonId}`);
-                                showTimerControls(button);
-                            }
+                } catch (e) {
+                    showNotification('Error: ' + e.message);
+                }
+            };
+
+            const handleLogout = () => {
+                setLoggedIn(false);
+                setUserData(null);
+                localStorage.removeItem('userData');
+                showNotification('Logged out');
+            };
+
+            const toggleTheme = () => {
+                const newTheme = theme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+                localStorage.setItem('theme', newTheme);
+            };
+
+            const toggleSidebar = () => {
+                setSidebarOpen(!sidebarOpen);
+            };
+
+            const createPetals = () => {
+                const petalsContainer = petalsRef.current;
+                if (!petalsContainer) return;
+                for (let i = 0; i < 20; i++) {
+                    const petal = document.createElement('div');
+                    petal.classList.add('petal');
+                    petal.style.left = `${Math.random() * 100}vw`;
+                    petal.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                    petal.style.animationDelay = `${Math.random() * 5}s`;
+                    petalsContainer.appendChild(petal);
+                }
+            };
+
+            const requestPermissions = () => {
+                try {
+                    const testWindow = window.open('', '_blank');
+                    if (testWindow) {
+                        testWindow.close();
+                    } else {
+                        showNotification('Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.');
+                    }
+                } catch (e) {
+                    showNotification('Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.');
+                }
+            };
+
+            const loadColumnState = () => {
+                const loadedButtons = {};
+                ['pending', 'completed', 'deferred'].forEach(columnId => {
+                    const buttonIds = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
+                    loadedButtons[columnId] = buttonIds.map(id => ({ id, num: id.split('-')[1] }));
+                });
+                setButtons(loadedButtons);
+                // Restore timers for deferred
+                loadedButtons.deferred.forEach(btn => {
+                    const endTime = localStorage.getItem(`timer_${btn.id}`);
+                    if (endTime) {
+                        const remaining = Math.floor((parseInt(endTime) - Date.now()) / 1000);
+                        if (remaining > 0) {
+                            startTimer(btn.id, remaining);
                         }
                     }
                 });
-            });
-            updateCounters();
-        }
+            };
 
-        function createButton(id, num, columnId) {
-            const button = document.createElement('button');
-            button.id = id;
-            button.classList.add(columnId);
-            button.textContent = `Кнопка ${num}`;
-            button.draggable = true;
-            button.setAttribute('aria-label', `Кнопка ${num} в колонке ${columnId}`);
-            button.addEventListener('dragstart', drag);
-            button.addEventListener('dragend', dragEnd);
-            button.addEventListener('click', (e) => handleButtonClick(e, button));
-            button.addEventListener('dblclick', () => window.open(`https://backend.yataxi.kz/admin/list-tickets/${num}`, '_blank'));
-            button.addEventListener('contextmenu', (e) => deleteButton(e, button));
-            button.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleButtonClick(e, button);
+            const saveColumnState = () => {
+                Object.keys(buttons).forEach(columnId => {
+                    const buttonIds = buttons[columnId].map(btn => btn.id);
+                    localStorage.setItem(`${columnId}Buttons`, JSON.stringify(buttonIds));
+                });
+            };
+
+            const showNotification = (message) => {
+                setNotification({ message, show: true });
+                setTimeout(() => setNotification({ message: '', show: false }), 3000);
+            };
+
+            const addButtons = () => {
+                const from = parseInt(fromValue);
+                const to = parseInt(toValue);
+                const step = parseInt(stepValue);
+                if (isNaN(from) || isNaN(to) || isNaN(step) || from < 1 || to < 1 || step < 1 || from > to) {
+                    showNotification('Введите корректные положительные числа!');
+                    return;
                 }
-            });
-            return button;
-        }
+                const newPending = [...buttons.pending];
+                for (let i = from; i <= to; i += step) {
+                    const id = `button-${i}`;
+                    if (!Object.values(buttons).flat().some(b => b.id === id)) {
+                        newPending.push({ id, num: i });
+                    }
+                }
+                setButtons({ ...buttons, pending: newPending });
+                saveColumnState();
+                showNotification('Кнопки добавлены!');
+            };
 
-        function addButtons() {
-            const from = parseInt(document.getElementById('from').value);
-            const to = parseInt(document.getElementById('to').value);
-            const step = parseInt(document.getElementById('step').value);
-            if (isNaN(from) || isNaN(to) || isNaN(step) || from < 1 || to < 1 || step < 1) {
-                showNotification('Введите корректные положительные числа!');
-                return;
-            }
-            if (from > to) {
-                showNotification('Начальное значение не может быть больше конечного!');
-                return;
-            }
-            const pendingList = document.getElementById('pendingList');
-            const addBtn = document.querySelector('.controls button[aria-label="Добавить кнопки"]');
-            addBtn.disabled = true;
-            for (let i = from; i <= to; i += step) {
-                const buttonId = `button-${i}`;
-                if (document.getElementById(buttonId)) continue;
-                const button = createButton(buttonId, i, 'pending');
-                pendingList.appendChild(button);
-            }
-            addBtn.disabled = false;
-            updateCounters();
-            saveColumnState();
-            showNotification('Кнопки добавлены!');
-        }
+            const addSingleDeferredButton = () => {
+                const num = prompt('Введите номер кнопки для добавления в Отложенные:');
+                const parsedNum = parseInt(num);
+                if (isNaN(parsedNum) || parsedNum < 1) return showNotification('Введите корректный номер!');
+                const id = `button-${parsedNum}`;
+                if (Object.values(buttons).flat().some(b => b.id === id)) return showNotification('Кнопка уже существует!');
+                const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
+                setButtons({ ...buttons, deferred: newDeferred });
+                startTimer(id, 900); // initial 15 min
+                saveColumnState();
+                showNotification(`Кнопка ${parsedNum} добавлена!`);
+            };
 
-        function addSingleDeferredButton() {
-            const buttonNumber = prompt('Введите номер кнопки для добавления в Отложенные:');
-            const num = parseInt(buttonNumber);
-            if (!buttonNumber || isNaN(num) || num < 1) {
-                showNotification('Введите корректный положительный номер кнопки!');
-                return;
-            }
-            const buttonId = `button-${num}`;
-            if (document.getElementById(buttonId)) {
-                showNotification('Кнопка с таким номером уже существует!');
-                return;
-            }
-            const deferredList = document.getElementById('deferredList');
-            const button = createButton(buttonId, num, 'deferred');
-            deferredList.appendChild(button);
-            addTimerToButton(button);
-            updateCounters();
-            saveColumnState();
-            showNotification(`Кнопка ${num} добавлена в Отложенные!`);
-        }
-
-        function addTimerToButton(button, customDuration = null) {
-            const id = button.id;
-            if (timers.has(id)) {
-                clearInterval(timers.get(id));
-                timers.delete(id);
-            }
-            const oldContainer = button.querySelector('.timer-container');
-            if (oldContainer) oldContainer.remove();
-            removeTimerControls(button);
-            const timerContainer = document.createElement('div');
-            timerContainer.classList.add('timer-container');
-            const timerElement = document.createElement('div');
-            timerElement.classList.add('timer');
-            timerContainer.appendChild(timerElement);
-            const editTimeBtn = document.createElement('button');
-            editTimeBtn.textContent = '🖋️';
-            editTimeBtn.className = 'edit-time-btn';
-            editTimeBtn.setAttribute('aria-label', 'Редактировать время');
-            editTimeBtn.addEventListener('click', () => promptForCustomTime(button));
-            timerContainer.appendChild(editTimeBtn);
-            button.appendChild(timerContainer);
-            let restartCount = parseInt(localStorage.getItem(`restartCount_${id}`) || '0');
-            let duration;
-            if (customDuration !== null) {
-                duration = customDuration;
-            } else {
-                duration = restartCount === 0 ? 900 : restartCount === 1 ? 1800 : 3600;
-            }
-            const endTime = Date.now() + duration * 1000;
-            localStorage.setItem(`timer_${id}`, endTime);
-            const interval = setInterval(() => {
-                const now = Date.now();
-                const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                if (timeLeft <= 0) {
-                    clearInterval(interval);
-                    timers.delete(id);
-                    localStorage.removeItem(`timer_${id}`);
-                    const buttonId = id.split('-')[1];
-                    try {
+            const startTimer = (id, duration) => {
+                const endTime = Date.now() + duration * 1000;
+                localStorage.setItem(`timer_${id}`, endTime);
+                const interval = setInterval(() => {
+                    const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+                    const timerEl = document.getElementById(`timer-${id}`);
+                    if (timerEl) {
+                        const minutes = Math.floor(timeLeft / 60);
+                        const seconds = timeLeft % 60;
+                        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    }
+                    if (timeLeft <= 0) {
+                        clearInterval(interval);
+                        timersRef.current.delete(id);
+                        localStorage.removeItem(`timer_${id}`);
+                        const buttonId = id.split('-')[1];
                         window.open(`https://backend.yataxi.kz/admin/list-tickets/${buttonId}`, '_blank');
-                    } catch (e) {}
-                    const container = button.querySelector('.timer-container');
-                    if (container) container.remove();
-                    showTimerControls(button);
-                }
-            }, 1000);
-            timers.set(id, interval);
-        }
+                        setButtons(prev => ({ ...prev })); // Force re-render
+                    }
+                }, 1000);
+                timersRef.current.set(id, interval);
+            };
 
-        function promptForCustomTime(button) {
-            const userInput = prompt('Введите время в минутах (положительное число):');
-            const id = button.id;
-            if (userInput && !isNaN(userInput) && parseFloat(userInput) > 0) {
-                const customDuration = Math.floor(parseFloat(userInput) * 60);
-                if (timers.has(id)) {
-                    clearInterval(timers.get(id));
-                    timers.delete(id);
+            const promptForCustomTime = (id) => {
+                const userInput = prompt('Введите время в минутах:');
+                const customDuration = parseFloat(userInput);
+                if (isNaN(customDuration) || customDuration <= 0) return showNotification('Некорректное число!');
+                const seconds = Math.floor(customDuration * 60);
+                if (timersRef.current.has(id)) {
+                    clearInterval(timersRef.current.get(id));
+                    timersRef.current.delete(id);
                 }
-                localStorage.setItem(`timer_${id}`, Date.now() + customDuration * 1000);
-                if (localStorage.getItem(`restartCount_${id}`) === null) {
-                    localStorage.setItem(`restartCount_${id}`, '0');
-                }
-                addTimerToButton(button, customDuration);
-                showNotification('Таймер обновлен!');
-            } else {
-                showNotification('Введите корректное положительное число!');
-            }
-        }
+                startTimer(id, seconds);
+            };
 
-        function showTimerControls(button) {
-            removeTimerControls(button);
-            const restartBtn = document.createElement('button');
-            restartBtn.textContent = '↻';
-            restartBtn.className = 'timer-control';
-            restartBtn.setAttribute('aria-label', 'Перезапустить таймер');
-            restartBtn.addEventListener('click', () => {
-                const id = button.id;
+            const restartTimer = (id) => {
                 let restartCount = parseInt(localStorage.getItem(`restartCount_${id}`) || '0');
                 restartCount++;
                 localStorage.setItem(`restartCount_${id}`, restartCount);
-                addTimerToButton(button);
-            });
-            const completeBtn = document.createElement('button');
-            completeBtn.textContent = '✔';
-            completeBtn.className = 'timer-control';
-            completeBtn.setAttribute('aria-label', 'Завершить задачу');
-            completeBtn.addEventListener('click', () => moveToCompleted(button));
-            button.appendChild(restartBtn);
-            button.appendChild(completeBtn);
-        }
+                const duration = restartCount === 1 ? 1800 : 3600;
+                if (timersRef.current.has(id)) clearInterval(timersRef.current.get(id));
+                startTimer(id, duration);
+                setButtons(prev => ({ ...prev })); // Re-render
+            };
 
-        function removeTimerControls(button) {
-            button.querySelectorAll('.timer-control').forEach(el => el.remove());
-            const timer = button.querySelector('.timer');
-            if (timer) timer.remove();
-        }
-
-        function moveToCompleted(button) {
-            const id = button.id;
-            localStorage.removeItem(`timer_${id}`);
-            localStorage.removeItem(`restartCount_${id}`);
-            if (timers.has(id)) {
-                clearInterval(timers.get(id));
-                timers.delete(id);
-            }
-            document.getElementById('completedList').appendChild(button);
-            button.classList.remove('deferred', 'pending');
-            button.classList.add('completed');
-            removeTimerControls(button);
-            updateCounters();
-            saveColumnState();
-        }
-
-        function handleButtonClick(event, button) {
-            if (event.ctrlKey || event.metaKey) {
-                toggleSelection(button);
-            } else {
-                clearSelection();
-                button.classList.add('selected');
-                selectedButtons = [button];
-            }
-        }
-
-        function toggleSelection(button) {
-            const index = selectedButtons.indexOf(button);
-            if (index > -1) {
-                selectedButtons.splice(index, 1);
-                button.classList.remove('selected');
-            } else {
-                selectedButtons.push(button);
-                button.classList.add('selected');
-            }
-        }
-
-        function clearSelection() {
-            selectedButtons.forEach(button => button.classList.remove('selected'));
-            selectedButtons = [];
-        }
-
-        function openSelectedInTabs() {
-            if (selectedButtons.length === 0) {
-                showNotification('Выберите хотя бы одну кнопку!');
-                return;
-            }
-            selectedButtons.forEach(button => {
-                const id = button.id.split('-')[1];
-                window.open(`https://backend.yataxi.kz/admin/list-tickets/${id}`, '_blank');
-            });
-        }
-
-        function deleteButton(event, button) {
-            event.preventDefault();
-            if (confirm('Вы уверены, что хотите удалить эту кнопку?')) {
-                const id = button.id;
+            const completeTask = (id, column) => {
                 localStorage.removeItem(`timer_${id}`);
                 localStorage.removeItem(`restartCount_${id}`);
-                if (timers.has(id)) {
-                    clearInterval(timers.get(id));
-                    timers.delete(id);
+                if (timersRef.current.has(id)) {
+                    clearInterval(timersRef.current.get(id));
+                    timersRef.current.delete(id);
                 }
-                button.remove();
-                removeButtonFromStorage(button);
-                updateCounters();
-                showNotification('Кнопка удалена!');
-            }
-        }
+                setButtons(prev => {
+                    const btn = prev.deferred.find(b => b.id === id);
+                    if (!btn) return prev;
+                    return {
+                        ...prev,
+                        deferred: prev.deferred.filter(b => b.id !== id),
+                        completed: [...prev.completed, btn]
+                    };
+                });
+                saveColumnState();
+            };
 
-        function removeButtonFromStorage(button) {
-            ['pending', 'completed', 'deferred'].forEach(columnId => {
-                const ids = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
-                localStorage.setItem(`${columnId}Buttons`, JSON.stringify(ids.filter(id => id !== button.id)));
-                localStorage.removeItem(`timer_${button.id}`);
-                localStorage.removeItem(`restartCount_${button.id}`);
-            });
-        }
-
-        function drag(event) {
-            event.dataTransfer.setData('text', event.target.id);
-            event.target.classList.add('dragging');
-            event.target.focus();
-        }
-
-        function dragEnd(event) {
-            event.target.classList.remove('dragging');
-        }
-
-        function allowDrop(event) {
-            event.preventDefault();
-            event.currentTarget.classList.add('dragover');
-        }
-
-        function drop(event) {
-            event.preventDefault();
-            const column = event.target.closest('.column');
-            column.classList.remove('dragover');
-            selectedButtons.forEach(button => {
-                column.querySelector('.list').appendChild(button);
-                button.classList.remove('pending', 'completed', 'deferred');
-                button.classList.add(column.id);
-                removeTimerControls(button);
-                if (column.id === 'deferred') addTimerToButton(button);
-            });
-            clearSelection();
-            updateCounters();
-            saveColumnState();
-        }
-
-        function allowTrashDrop(event) {
-            event.preventDefault();
-            document.getElementById('trashBin').classList.add('dragover');
-        }
-
-        function dropInTrash(event) {
-            event.preventDefault();
-            document.getElementById('trashBin').classList.remove('dragover');
-            selectedButtons.forEach(button => {
-                const id = button.id;
-                if (timers.has(id)) {
-                    clearInterval(timers.get(id));
-                    timers.delete(id);
-                }
-                button.remove();
-                removeButtonFromStorage(button);
-            });
-            clearSelection();
-            updateCounters();
-            showNotification('Кнопки удалены!');
-        }
-
-        function updateCounters() {
-            ['pending', 'completed', 'deferred'].forEach(id => {
-                const countElement = document.getElementById(id + 'Count');
-                const count = document.getElementById(id + 'List').children.length;
-                if (id === 'deferred') {
-                    countElement.childNodes[0].textContent = count;
+            const handleButtonClick = (e, btn, column) => {
+                if (e.ctrlKey || e.metaKey) {
+                    setSelectedButtons(prev => prev.some(s => s.id === btn.id) ? prev.filter(s => s.id !== btn.id) : [...prev, {...btn, column}]);
                 } else {
-                    countElement.textContent = count;
+                    setSelectedButtons([{...btn, column}]);
                 }
-            });
-        }
+            };
 
-        function clearColumn(columnId) {
-            const list = document.getElementById(`${columnId}List`);
-            while (list.firstChild) {
-                const id = list.firstChild.id;
-                if (timers.has(id)) {
-                    clearInterval(timers.get(id));
-                    timers.delete(id);
+            const openSelectedInTabs = () => {
+                if (selectedButtons.length === 0) return showNotification('Выберите кнопку!');
+                selectedButtons.forEach(btn => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank'));
+            };
+
+            const deleteButton = (btn) => {
+                if (!confirm('Уверены?')) return;
+                const id = btn.id;
+                if (timersRef.current.has(id)) clearInterval(timersRef.current.get(id));
+                timersRef.current.delete(id);
+                localStorage.removeItem(`timer_${id}`);
+                localStorage.removeItem(`restartCount_${id}`);
+                setButtons(prev => {
+                    const newButtons = { ...prev };
+                    Object.keys(newButtons).forEach(col => {
+                        newButtons[col] = newButtons[col].filter(b => b.id !== id);
+                    });
+                    return newButtons;
+                });
+                saveColumnState();
+                setSelectedButtons(prev => prev.filter(s => s.id !== id));
+                showNotification('Кнопка удалена!');
+            };
+
+            const dragStart = (e, btn) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify(btn));
+                e.target.classList.add('dragging');
+            };
+
+            const dragEnd = (e) => {
+                e.target.classList.remove('dragging');
+            };
+
+            const allowDrop = (e) => {
+                e.preventDefault();
+                e.currentTarget.classList.add('dragover');
+            };
+
+            const drop = (e, targetColumn) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove('dragover');
+                setSelectedButtons([]);
+                setButtons(prev => {
+                    const newButtons = { ...prev };
+                    selectedButtons.forEach(selBtn => {
+                        Object.keys(newButtons).forEach(col => {
+                            newButtons[col] = newButtons[col].filter(b => b.id !== selBtn.id);
+                        });
+                        newButtons[targetColumn].push(selBtn);
+                        if (targetColumn === 'deferred') {
+                            startTimer(selBtn.id, 900);
+                        } else if (selBtn.column === 'deferred') {
+                            if (timersRef.current.has(selBtn.id)) clearInterval(timersRef.current.get(selBtn.id));
+                            timersRef.current.delete(selBtn.id);
+                            localStorage.removeItem(`timer_${selBtn.id}`);
+                            localStorage.removeItem(`restartCount_${selBtn.id}`);
+                        }
+                    });
+                    return newButtons;
+                });
+                saveColumnState();
+            };
+
+            const dropInTrash = (e) => {
+                e.preventDefault();
+                document.getElementById('trashBin').classList.remove('dragover');
+                selectedButtons.forEach(selBtn => deleteButton(selBtn));
+            };
+
+            const clearColumn = (columnId) => {
+                buttons[columnId].forEach(btn => {
+                    if (timersRef.current.has(btn.id)) clearInterval(timersRef.current.get(btn.id));
+                    timersRef.current.delete(btn.id);
+                    localStorage.removeItem(`timer_${btn.id}`);
+                    localStorage.removeItem(`restartCount_${btn.id}`);
+                });
+                setButtons(prev => ({ ...prev, [columnId]: [] }));
+                saveColumnState();
+                showNotification(`Колонка "${columnId}" очищена!`);
+            };
+
+            const addName = () => {
+                const name = nameInput.trim();
+                if (name && !names.includes(name)) {
+                    setNames([...names, name]);
+                    setNameInput('');
+                    showNotification('Имя добавлено!');
+                } else {
+                    showNotification('Введите уникальное имя!');
                 }
-                removeButtonFromStorage(list.firstChild);
-                list.removeChild(list.firstChild);
+            };
+
+            const deleteName = (index) => {
+                setNames(prev => prev.filter((_, i) => i !== index));
+                showNotification('Имя удалено!');
+            };
+
+            const divideButtons = () => {
+                const start = parseInt(startButton);
+                if (isNaN(start) || start < 1) return showNotification('Введите корректный номер!');
+                const selectedNames = names.filter((_, index) => document.getElementById(`checkbox-${index}`)?.checked);
+                if (selectedNames.length === 0) return showNotification('Выберите имя!');
+                const res = selectedNames.map((name, index) => `${start + index} - ${name}`).join('\n');
+                setResult(res);
+                showNotification('Кнопки поделены!');
+            };
+
+            const copyResult = () => {
+                navigator.clipboard.writeText(result);
+                showNotification('Текст скопирован!');
+            };
+
+            const renderButton = (btn, column) => {
+                const id = btn.id;
+                const endTime = localStorage.getItem(`timer_${id}`);
+                const hasTimer = column === 'deferred' && endTime && (parseInt(endTime) > Date.now());
+                const showControls = column === 'deferred' && !hasTimer;
+                const isSelected = selectedButtons.some(s => s.id === id);
+                return (
+                    <button
+                        key={id}
+                        id={id}
+                        className={`${column} ${isSelected ? 'selected' : ''}`}
+                        draggable
+                        onDragStart={(e) => dragStart(e, btn)}
+                        onDragEnd={dragEnd}
+                        onClick={(e) => handleButtonClick(e, btn, column)}
+                        onDoubleClick={() => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank')}
+                        onContextMenu={(e) => { e.preventDefault(); deleteButton(btn); }}
+                    >
+                        Кнопка {btn.num}
+                        {column === 'deferred' && (
+                            <div className="timer-container">
+                                {hasTimer && (
+                                    <>
+                                        <div className="timer" id={`timer-${id}`}></div>
+                                        <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        {showControls && (
+                            <>
+                                <button className="timer-control" onClick={() => restartTimer(id)}>↻</button>
+                                <button className="timer-control" onClick={() => completeTask(id, column)}>✔</button>
+                            </>
+                        )}
+                    </button>
+                );
+            };
+
+            if (!loggedIn) {
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '10px' }}>
+                        <input type="text" value={loginValue} onChange={(e) => setLoginValue(e.target.value)} placeholder="Login" />
+                        <input type="password" value={passwordValue} onChange={(e) => setPasswordValue(e.target.value)} placeholder="Password" />
+                        <button onClick={handleLogin}>Войти</button>
+                        <div className={`notification ${notification.show ? 'show' : ''}`}>{notification.message}</div>
+                    </div>
+                );
             }
-            updateCounters();
-            saveColumnState();
-            showNotification(`Колонка "${columnId}" очищена!`);
-        }
 
-        function showNotification(message) {
-            const note = document.getElementById('notification');
-            note.textContent = message;
-            note.classList.add('show');
-            setTimeout(() => note.classList.remove('show'), 3000);
-        }
+            return (
+                <>
+                    <div className="petals" ref={petalsRef}></div>
+                    <button className={`sidebar-toggle ${sidebarOpen ? 'open' : ''}`} onClick={toggleSidebar} aria-label="Открыть меню разделения кнопок">📝</button>
+                    <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+                        <div className="sidebar-content">
+                            <h3 style={{ textAlign: 'center' }}>Тикето-дробилка</h3>
+                            <input value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="Введите имя" />
+                            <button onClick={addName}>Добавить имя</button>
+                            <h3>Список имен</h3>
+                            <div className="name-list">
+                                {names.map((name, index) => (
+                                    <div key={index} className="name-item">
+                                        <label className="chekmarkbox">
+                                            <input type="checkbox" id={`checkbox-${index}`} defaultChecked />
+                                            {name}
+                                        </label>
+                                        <button onClick={() => deleteName(index)}>Удалить</button>
+                                    </div>
+                                ))}
+                            </div>
+                            <h3>Поделить</h3>
+                            <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер кнопки" />
+                            <button onClick={divideButtons}>Поделить</button>
+                            <h3>Результат</h3>
+                            <textarea className="result-textarea" value={result} readOnly />
+                            <button onClick={copyResult}>Скопировать</button>
+                        </div>
+                    </div>
+                    <div className="container">
+                        <div className="controls">
+                            <button onClick={toggleTheme} aria-label="Переключить тему">
+                                <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                            </button>
+                            <input type="number" value={fromValue} onChange={(e) => setFromValue(e.target.value)} placeholder="С какой кнопки" />
+                            <input type="number" value={toValue} onChange={(e) => setToValue(e.target.value)} placeholder="До какой кнопки" />
+                            <input type="number" value={stepValue} onChange={(e) => setStepValue(e.target.value)} placeholder="Шаг" />
+                            <button onClick={addButtons} aria-label="Добавить кнопки">Добавить кнопки</button>
+                            <button onClick={openSelectedInTabs} aria-label="Открыть выбранные">Открыть выбранные</button>
+                            <button onClick={handleLogout}>Выйти</button>
+                            {userData && <span>Добро пожаловать, {userData.name}</span>}
+                        </div>
+                        <div className="columns">
+                            {['pending', 'completed', 'deferred'].map(column => (
+                                <div
+                                    key={column}
+                                    className="column"
+                                    id={column}
+                                    onDrop={(e) => drop(e, column)}
+                                    onDragOver={allowDrop}
+                                    onDragLeave={(e) => e.currentTarget.classList.remove('dragover')}
+                                >
+                                    <h2>{column === 'pending' ? 'Выполняемые' : column === 'completed' ? 'Выполненные' : 'Отложенные'}</h2>
+                                    <div className="list" id={`${column}List`}>
+                                        {buttons[column].map(btn => renderButton(btn, column))}
+                                    </div>
+                                    <div className="counter" id={`${column}Count`}>
+                                        {buttons[column].length}
+                                        {column === 'deferred' && <button className="add-button" onClick={addSingleDeferredButton}>+</button>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="clear-btn-container">
+                            <button className="clear-btn" onClick={() => clearColumn('pending')}>Очистить Выполняемые</button>
+                            <button className="clear-btn" onClick={() => clearColumn('completed')}>Очистить Выполненные</button>
+                            <button className="clear-btn" onClick={() => clearColumn('deferred')}>Очистить Отложенные</button>
+                        </div>
+                    </div>
+                    <div className="trash-bin" id="trashBin" onDragOver={(e) => { e.preventDefault(); document.getElementById('trashBin').classList.add('dragover'); }} onDrop={dropInTrash} onDragLeave={() => document.getElementById('trashBin').classList.remove('dragover')}>
+                        Перетащите сюда для удаления
+                    </div>
+                    <div className={`notification ${notification.show ? 'show' : ''}`} id="notification">
+                        {notification.message}
+                    </div>
+                </>
+            );
+        };
 
-        function addName() {
-            const nameInput = document.getElementById('nameInput');
-            const name = nameInput.value.trim();
-            if (name && !names.includes(name)) {
-                names.push(name);
-                nameInput.value = '';
-                updateNameList();
-                showNotification('Имя добавлено!');
-            } else {
-                showNotification('Введите уникальное имя!');
-            }
-        }
-
-        function updateNameList() {
-            const nameList = document.getElementById('nameList');
-            nameList.innerHTML = '';
-            names.forEach((name, index) => {
-                const div = document.createElement('div');
-                div.className = 'name-item';
-                div.innerHTML = `
-                    <label class="chekmarkbox">
-                        <input type="checkbox" class="mr-2" checked>
-                        ${name}
-                    </label>
-                    <button onclick="deleteName(${index})" class="text-red-500 hover:text-red-700 text-sm">Удалить</button>
-                `;
-                nameList.appendChild(div);
-            });
-        }
-
-        function deleteName(index) {
-            names.splice(index, 1);
-            updateNameList();
-            showNotification('Имя удалено!');
-        }
-
-        function divideButtons() {
-            const startButton = parseInt(document.getElementById('startButton').value);
-            if (!startButton || startButton < 1) {
-                showNotification('Введите корректный начальный номер кнопки!');
-                return;
-            }
-            const selectedNames = [];
-            document.querySelectorAll('#nameList input[type="checkbox"]').forEach((checkbox, index) => {
-                if (checkbox.checked) {
-                    selectedNames.push(names[index]);
-                }
-            });
-            if (selectedNames.length === 0) {
-                showNotification('Выберите хотя бы одно имя!');
-                return;
-            }
-            
-            const result = selectedNames.map((name, index) => `${startButton + index} - ${name}`).join('\n');
-            document.getElementById('result').value = result;
-            updateCounters();
-            saveColumnState();
-            showNotification('Кнопки поделены и добавлены!');
-        }
-
-        function copyResult() {
-            const result = document.getElementById('result');
-            result.select();
-            document.execCommand('copy');
-            showNotification('Текст скопирован в буфер обмена!');
-        }
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
