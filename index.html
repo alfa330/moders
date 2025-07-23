@@ -499,7 +499,7 @@
 
         .user-info {
             position: fixed;
-            top: 20px;
+            top: 0;
             right: 20px;
             display: flex;
             align-items: center;
@@ -508,7 +508,7 @@
             padding: 10px 15px;
             border-radius: 10px;
             box-shadow: var(--shadow-light);
-            z-index: 100;
+            z-index: 101;
         }
 
         .user-info span {
@@ -533,7 +533,7 @@
             .sidebar.open { left: 0; }
             .sidebar-toggle { width: 40px; height: 40px; font-size: 20px; }
             .login-container { width: 90%; padding: 20px; }
-            .user-info { top: 10px; right: 10px; flex-direction: column; gap: 5px; padding: 8px; }
+            .user-info { top: 0; right: 10px; flex-direction: column; gap: 5px; padding: 8px; }
         }
       
       	::-webkit-scrollbar {
@@ -1004,7 +1004,7 @@
                     </div>
                     {userData && (
                         <div className="user-info">
-                            <span>{userData.name}</span>
+                            <span>Добро пожаловать, {userData.name}</span>
                             <button onClick={handleLogout}>Выйти</button>
                         </div>
                     )}
