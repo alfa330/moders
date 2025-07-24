@@ -664,6 +664,10 @@
                     const data = await response.json();
                     if (data.status === 'success') {
                         setActiveOperators(data.operators);
+                        if (userData && userData.role === 'operator') {
+                            const isActive = data.operators.some(op => op.name === userData.name);
+                            setUserData(prev => ({ ...prev, isActive }));
+                        }
                     }
                 } catch (e) {
                     console.error('Error fetching active operators:', e);
