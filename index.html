@@ -632,7 +632,7 @@
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/active_operators`, {
                         headers: {
-                            'X-API-Key': FLASK_API_KEY,
+                            'X-API-Key': userData.apiKey,
                             'X-User-Id': userData.id
                         }
                     });
@@ -689,7 +689,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-API-Key': FLASK_API_KEY,
+                            'X-API-Key': userData.apiKey,
                             'X-User-Id': userData.id
                         },
                         body: JSON.stringify({ is_active: newActive })
