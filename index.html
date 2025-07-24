@@ -623,8 +623,6 @@
             useEffect(() => {
                 if (loggedIn) {
                     fetchActiveOperators();
-                    const interval = setInterval(fetchActiveOperators, 30000);
-                    return () => clearInterval(interval);
                 }
             }, [loggedIn]);
 
