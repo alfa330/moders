@@ -589,19 +589,18 @@
         const App = () => {
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
             const [sidebarOpen, setSidebarOpen] = useState(false);
-            const [names, setNames] = useState(['Руслан', 'Жанасыл', 'Шерзад', 'Нурсерик', 'Азана', 'Асель', 'Анель', 'Балауса', 'Шугыла', 'Алуа']);
             const [buttons, setButtons] = useState({ pending: [], completed: [], deferred: [] });
             const [selectedButtons, setSelectedButtons] = useState([]);
             const [notification, setNotification] = useState({ message: '', show: false });
             const [fromValue, setFromValue] = useState('');
             const [toValue, setToValue] = useState('');
             const [stepValue, setStepValue] = useState('');
-            const [nameInput, setNameInput] = useState('');
             const [startButton, setStartButton] = useState('');
             const [result, setResult] = useState('');
             const timersRef = useRef(new Map());
             const petalsRef = useRef(null);
             const [loggedIn, setLoggedIn] = useState(false);
+            const [activeOperators, setActiveOperators] = useState([]);
             const [userData, setUserData] = useState(null);
             const [loginValue, setLoginValue] = useState('');
             const [passwordValue, setPasswordValue] = useState('');
@@ -620,6 +619,31 @@
                     setLoggedIn(true);
                 }
             }, []);
+
+            useEffect(() => {
+                if (loggedIn) {
+                    fetchActiveOperators();
+                    const interval = setInterval(fetchActiveOperators, 30000);
+                    return () => clearInterval(interval);
+                }
+            }, [loggedIn]);
+
+            const fetchActiveOperators = async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/active_operators`, {
+                        headers: {
+                            'X-API-Key': FLASK_API_KEY,
+                            'X-User-Id': userData.id
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        setActiveOperators(data.operators);
+                    }
+                } catch (e) {
+                    console.error('Error fetching active operators:', e);
+                }
+            };
 
             const handleLogin = async () => {
                 try {
@@ -657,6 +681,27 @@
 
             const toggleSidebar = () => {
                 setSidebarOpen(!sidebarOpen);
+            };
+
+            const toggleActive = async (newActive) => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/user/toggle_active`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': FLASK_API_KEY,
+                            'X-User-Id': userData.id
+                        },
+                        body: JSON.stringify({ is_active: newActive })
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        setUserData(prev => ({ ...prev, isActive: newActive }));
+                        fetchActiveOperators(); // Refresh list immediately
+                    }
+                } catch (e) {
+                    console.error('Error toggling active:', e);
+                }
             };
 
             const createPetals = () => {
@@ -902,30 +947,14 @@
                 showNotification(`Колонка "${columnId}" очищена!`);
             };
 
-            const addName = () => {
-                const name = nameInput.trim();
-                if (name && !names.includes(name)) {
-                    setNames([...names, name]);
-                    setNameInput('');
-                    showNotification('Имя добавлено!');
-                } else {
-                    showNotification('Введите уникальное имя!');
-                }
-            };
-
-            const deleteName = (index) => {
-                setNames(prev => prev.filter((_, i) => i !== index));
-                showNotification('Имя удалено!');
-            };
-
-            const divideButtons = () => {
+            const divideButtons = async () => {
+                await fetchActiveOperators();
                 const start = parseInt(startButton);
                 if (isNaN(start) || start < 1) return showNotification('Введите корректный номер!');
-                const selectedNames = names.filter((_, index) => document.getElementById(`checkbox-${index}`)?.checked);
-                if (selectedNames.length === 0) return showNotification('Выберите имя!');
-                const res = selectedNames.map((name, index) => `${start + index} - ${name}`).join('\n');
+                if (activeOperators.length === 0) return showNotification('Нет активных операторов!');
+                const res = activeOperators.map((op, index) => `${op.name} - ${start + index}`).join('\n');
                 setResult(res);
-                showNotification('Кнопки поделены!');
+                showNotification('Тикеты поделены!');
             };
 
             const copyResult = () => {
@@ -990,25 +1019,13 @@
                     <button className={`sidebar-toggle ${sidebarOpen ? 'open' : ''}`} onClick={toggleSidebar} aria-label="Открыть меню разделения кнопок">📝</button>
                     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
                         <div className="sidebar-content">
-                            <h3 style={{ textAlign: 'center' }}>Тикето-дробилка</h3>
-                            <input value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="Введите имя" />
-                            <button onClick={addName}>Добавить имя</button>
-                            <h3>Список имен</h3>
-                            <div className="name-list">
-                                {names.map((name, index) => (
-                                    <div key={index} className="name-item">
-                                        <label className="chekmarkbox">
-                                            <input type="checkbox" id={`checkbox-${index}`} defaultChecked />
-                                            {name}
-                                        </label>
-                                        <button onClick={() => deleteName(index)}>Удалить</button>
-                                    </div>
-                                ))}
-                            </div>
-                            <h3>Поделить</h3>
-                            <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер кнопки" />
+                            {userData.role === 'operator' && (
+                                <button onClick={() => toggleActive(!userData.isActive)}>
+                                    {userData.isActive ? 'Деактивировать' : 'Активировать'}
+                                </button>
+                            )}
+                            <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
                             <button onClick={divideButtons}>Поделить</button>
-                            <h3>Результат</h3>
                             <textarea className="result-textarea" value={result} readOnly />
                             <button onClick={copyResult}>Скопировать</button>
                         </div>
