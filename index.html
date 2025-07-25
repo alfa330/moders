@@ -566,6 +566,7 @@
         ::-webkit-scrollbar-thumb:hover {
             background-color: var(--button-hover);
         }
+
 	body.dark ::-webkit-scrollbar-thumb {
   	   background-color: var(--button-bg);
  	   border: 2px solid var(--column-bg);
@@ -630,6 +631,9 @@
             const [isFetchingOperators, setIsFetchingOperators] = useState(false);
             const [isTogglingActive, setIsTogglingActive] = useState(false);
             const [isDividing, setIsDividing] = useState(false);
+            const [svList, setSvList] = useState([]);
+            const [selectedSv, setSelectedSv] = useState('');
+            const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0,7));
 
             useEffect(() => {
                 document.body.classList.toggle('dark', theme === 'dark');
@@ -649,8 +653,29 @@
             useEffect(() => {
                 if (loggedIn) {
                     fetchActiveOperators();
+                    if (userData.role === 'admin') {
+                        fetchSvList();
+                    }
                 }
-            }, [loggedIn]);
+            }, [loggedIn, userData]);
+
+            const fetchSvList = async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/admin/sv_list`, {
+                        headers: {
+                            'X-API-Key': userData.apiKey,
+                            'X-User-Id': userData.id
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        setSvList(data.sv_list);
+                        setSelectedSv(data.sv_list[0]?.id || '');
+                    }
+                } catch (e) {
+                    console.error('Error fetching SV list:', e);
+                }
+            };
 
             const fetchActiveOperators = async () => {
                 setIsFetchingOperators(true);
@@ -738,6 +763,52 @@
                     console.error('Error toggling active:', e);
                 } finally {
                     setIsTogglingActive(false);
+                }
+            };
+
+            const handleDownloadReport = async () => {
+                let sup_id;
+                if (userData.role === 'admin') {
+                    if (!selectedSv) {
+                        showNotification('Select supervisor');
+                        return;
+                    }
+                    sup_id = selectedSv;
+                } else {
+                    sup_id = userData.id;
+                }
+                const monthParam = selectedMonth ? `&month=${selectedMonth}` : '';
+                const url = `${API_BASE_URL}/api/report/monthly?supervisor_id=${sup_id}${monthParam}`;
+                try {
+                    const response = await fetch(url, {
+                        headers: {
+                            'X-API-Key': userData.apiKey,
+                            'X-User-Id': userData.id
+                        }
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        showNotification(errorData.error || 'Error generating report');
+                        return;
+                    }
+                    const blob = await response.blob();
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'report.xlsx';
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="?(.+)"?$/);
+                        if (filenameMatch) filename = filenameMatch[1];
+                    }
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(downloadUrl);
+                    showNotification('Report downloaded!');
+                } catch (e) {
+                    showNotification('Error: ' + e.message);
                 }
             };
 
@@ -1079,6 +1150,20 @@
                             </button>
                             <textarea className="result-textarea" value={result} readOnly />
                             <button onClick={copyResult}>Скопировать</button>
+                            {(userData.role === 'sv' || userData.role === 'admin') && (
+                                <div>
+                                    <h3>Отчет</h3>
+                                    {userData.role === 'admin' && (
+                                        <select value={selectedSv} onChange={(e) => setSelectedSv(e.target.value)}>
+                                            {svList.map(sv => (
+                                                <option key={sv.id} value={sv.id}>{sv.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
+                                    <button onClick={handleDownloadReport}>Отчет</button>
+                                </div>
+                            )}
                         </div>
                     </div>
                     {userData && (
