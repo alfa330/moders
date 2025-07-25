@@ -631,8 +631,10 @@
             const [isTogglingActive, setIsTogglingActive] = useState(false);
             const [isDividing, setIsDividing] = useState(false);
 	    const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
+            const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
 	    const generateReport = async () => {
+                setIsGeneratingReport(true);
 		    try {
 		        const response = await fetch(`${API_BASE_URL}/api/report/monthly?month=${month}`, {
 		            headers: {
@@ -651,7 +653,9 @@
 		        a.remove();
 		    } catch (e) {
 		        showNotification('Error generating report');
-		    }
+		    } finally {
+                        setIsGeneratingReport(false);
+                    }
 		};
 
             useEffect(() => {
@@ -1105,12 +1109,14 @@
 			        {userData.role !== 'operator' && (
 			            <>
 			                <input 
-			                    type="text" 
+			                    type="month" 
 			                    value={month} 
 			                    onChange={(e) => setMonth(e.target.value)} 
 			                    placeholder="Месяц YYYY-MM" 
 			                />
-			                <button onClick={generateReport}>Отчет</button>
+			                <button onClick={generateReport} disabled={isGeneratingReport}>
+                                            {isGeneratingReport ? <div className="loader"></div> : 'Отчет'}
+                                        </button>
 			            </>
 			        )}
 			    </div>
