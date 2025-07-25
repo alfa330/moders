@@ -630,6 +630,29 @@
             const [isFetchingOperators, setIsFetchingOperators] = useState(false);
             const [isTogglingActive, setIsTogglingActive] = useState(false);
             const [isDividing, setIsDividing] = useState(false);
+	    const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
+
+	    const generateReport = async () => {
+		    try {
+		        const response = await fetch(`${API_BASE_URL}/api/report/monthly?month=${month}`, {
+		            headers: {
+		                'X-API-Key': userData.apiKey,
+		                'X-User-Id': userData.id
+		            }
+		        });
+		        if (!response.ok) throw new Error('Failed');
+		        const blob = await response.blob();
+		        const url = window.URL.createObjectURL(blob);
+		        const a = document.createElement('a');
+		        a.href = url;
+		        a.download = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'report.xlsx';
+		        document.body.appendChild(a);
+		        a.click();
+		        a.remove();
+		    } catch (e) {
+		        showNotification('Error generating report');
+		    }
+		};
 
             useEffect(() => {
                 document.body.classList.toggle('dark', theme === 'dark');
@@ -1067,20 +1090,31 @@
                     <div className="petals" ref={petalsRef}></div>
                     <button className={`sidebar-toggle ${sidebarOpen ? 'open' : ''}`} onClick={toggleSidebar} aria-label="Открыть меню разделения кнопок">📝</button>
                     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-                        <div className="sidebar-content">
-                            {userData.role === 'operator' && (
-                                <button onClick={() => toggleActive(!userData.isActive)} disabled={isTogglingActive}>
-                                    {isTogglingActive ? <div className="loader"></div> : (userData.isActive ? 'Деактивировать' : 'Активировать')}
-                                </button>
-                            )}
-                            <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
-                            <button onClick={divideButtons} disabled={isDividing || isFetchingOperators}>
-                                {isDividing || isFetchingOperators ? <div className="loader"></div> : 'Поделить'}
-                            </button>
-                            <textarea className="result-textarea" value={result} readOnly />
-                            <button onClick={copyResult}>Скопировать</button>
-                        </div>
-                    </div>
+			    <div className="sidebar-content">
+			        {userData.role === 'operator' && (
+			            <button onClick={() => toggleActive(!userData.isActive)} disabled={isTogglingActive}>
+			                {isTogglingActive ? <div className="loader"></div> : (userData.isActive ? 'Деактивировать' : 'Активировать')}
+			            </button>
+			        )}
+			        <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
+			        <button onClick={divideButtons} disabled={isDividing || isFetchingOperators}>
+			            {isDividing || isFetchingOperators ? <div className="loader"></div> : 'Поделить'}
+			        </button>
+			        <textarea className="result-textarea" value={result} readOnly />
+			        <button onClick={copyResult}>Скопировать</button>
+			        {userData.role !== 'operator' && (
+			            <>
+			                <input 
+			                    type="text" 
+			                    value={month} 
+			                    onChange={(e) => setMonth(e.target.value)} 
+			                    placeholder="Месяц YYYY-MM" 
+			                />
+			                <button onClick={generateReport}>Отчет</button>
+			            </>
+			        )}
+			    </div>
+			</div>
                     {userData && (
                         <div className="user-info">
                             <span>{userData.name}</span>
