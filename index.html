@@ -1025,7 +1025,7 @@
                     setIsDividing(false);
                     return;
                 }
-                const res = activeOperators.map((op, index) => `${op.name.split(' ')[1]} - ${start + index}`).join('\n');
+                const res = activeOperators.map((op, index) => `${start + index} - ${op.name.split(' ')[1]}`).join('\n');
                 setResult(res);
                 showNotification('Тикеты поделены!');
                 setIsDividing(false);
