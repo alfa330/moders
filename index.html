@@ -533,47 +533,80 @@
         }
 
         .time-input-container {
+            position: absolute;
+            bottom: -40px;
+            left: 0;
+            right: 0;
             display: flex;
+            justify-content: center;
+            align-items: center;
             gap: 5px;
-            margin-top: 5px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 8px;
-            border-radius: 8px;
-            box-shadow: var(--shadow-light);
         }
 
-        .time-input-container input {
-            width: 50px;
-            padding: 6px;
+        .time-input {
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
             font-size: 14px;
+            box-shadow: var(--shadow-light);
+            width: 120px;
+            background: #fff;
             text-align: center;
         }
 
-        .time-input-container button {
-            padding: 6px 12px;
-            font-size: 14px;
+        .time-input:focus {
+            outline: 2px solid var(--button-bg);
+            box-shadow: 0 0 8px rgba(248, 184, 198, 0.3);
         }
 
-        .add-deferred-input {
+        .time-input-btn {
+            font-size: 12px;
+            padding: 8px 12px;
+            background-color: #4a2f3b;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .time-input-btn:hover {
+            background-color: #6b4e5a;
+        }
+
+        .deferred-input-container {
             display: flex;
+            justify-content: center;
+            align-items: center;
             gap: 5px;
-            margin-top: 5px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 8px;
-            border-radius: 8px;
-            box-shadow: var(--shadow-light);
+            margin-top: 10px;
         }
 
-        .add-deferred-input input {
+        .deferred-input {
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            box-shadow: var(--shadow-light);
             width: 100px;
-            padding: 6px;
-            font-size: 14px;
+            background: #fff;
             text-align: center;
         }
 
-        .add-deferred-input button {
-            padding: 6px 12px;
-            font-size: 14px;
+        .deferred-input:focus {
+            outline: 2px solid var(--button-bg);
+            box-shadow: 0 0 8px rgba(248, 184, 198, 0.3);
+        }
+
+        .deferred-input-btn {
+            font-size: 12px;
+            padding: 8px 12px;
+            background-color: #4a2f3b;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .deferred-input-btn:hover {
+            background-color: #6b4e5a;
         }
 
         @media (max-width: 768px) {
@@ -590,8 +623,6 @@
             .sidebar-toggle { width: 40px; height: 40px; font-size: 20px; }
             .login-container { width: 90%; padding: 30px; border-radius: 15px; }
             .user-info { top: 0px; right: 0px; flex-direction: row; gap: 5px; padding: 8px; border-radius: 0 0 0 10px; }
-            .time-input-container input { width: 40px; }
-            .add-deferred-input input { width: 80px; }
         }
 
         ::-webkit-scrollbar {
@@ -680,10 +711,10 @@
             const [isDividing, setIsDividing] = useState(false);
             const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
             const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-            const [editingTimerId, setEditingTimerId] = useState(null);
-            const [timerInput, setTimerInput] = useState({ hours: '', minutes: '', seconds: '' });
-            const [showAddDeferredInput, setShowAddDeferredInput] = useState(false);
-            const [newDeferredNum, setNewDeferredNum] = useState('');
+            const [editingTimeButton, setEditingTimeButton] = useState(null);
+            const [timeInput, setTimeInput] = useState('');
+            const [deferredInput, setDeferredInput] = useState('');
+            const [showDeferredInput, setShowDeferredInput] = useState(false);
 
             const generateReport = async () => {
                 setIsGeneratingReport(true);
@@ -900,26 +931,26 @@
             };
 
             const addSingleDeferredButton = () => {
-                const parsedNum = parseInt(newDeferredNum);
+                const parsedNum = parseInt(deferredInput);
                 if (isNaN(parsedNum) || parsedNum < 1) {
                     showNotification('Введите корректный номер!');
-                    setNewDeferredNum('');
-                    setShowAddDeferredInput(false);
+                    setDeferredInput('');
+                    setShowDeferredInput(false);
                     return;
                 }
                 const id = `button-${parsedNum}`;
                 if (Object.values(buttons).flat().some(b => b.id === id)) {
                     showNotification('Кнопка уже существует!');
-                    setNewDeferredNum('');
-                    setShowAddDeferredInput(false);
+                    setDeferredInput('');
+                    setShowDeferredInput(false);
                     return;
                 }
                 const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
                 setButtons({ ...buttons, deferred: newDeferred });
                 startTimer(id, 900);
                 showNotification(`Кнопка ${parsedNum} добавлена!`);
-                setNewDeferredNum('');
-                setShowAddDeferredInput(false);
+                setDeferredInput('');
+                setShowDeferredInput(false);
             };
 
             const startTimer = (id, duration) => {
@@ -945,25 +976,20 @@
                 timersRef.current.set(id, interval);
             };
 
-            const promptNFTForCustomTime = (id) => {
-                setEditingTimerId(id);
-                setTimerInput({ hours: '00', minutes: '15', seconds: '00' });
-            };
-
-            const handleTimerInputChange = (field, value) => {
-                let formattedValue = value.replace(/\D/g, '').slice(0, 2);
-                if (field !== 'hours' && parseInt(formattedValue) > 59) {
-                    formattedValue = '59';
+            const setCustomTime = (id) => {
+                const timeRegex = /^(\d{2}):(\d{2}):(\d{2})$/;
+                if (!timeRegex.test(timeInput)) {
+                    showNotification('Введите время в формате HH:MM:SS!');
+                    return;
                 }
-                setTimerInput(prev => ({ ...prev, [field]: formattedValue.padStart(2, '0') }));
-            };
-
-            const submitTimer = (id) => {
-                const { hours, minutes, seconds } = timerInput;
-                const totalSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
-                if (isNaN(totalSeconds) || totalSeconds <= 0) {
-                    showNotification('Введите корректное время!');
-                    setEditingTimerId(null);
+                const [hours, minutes, seconds] = timeInput.split(':').map(Number);
+                if (hours > 23 || minutes > 59 || seconds > 59) {
+                    showNotification('Некорректное время!');
+                    return;
+                }
+                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                if (totalSeconds <= 0) {
+                    showNotification('Время должно быть больше 0!');
                     return;
                 }
                 if (timersRef.current.has(id)) {
@@ -971,7 +997,8 @@
                     timersRef.current.delete(id);
                 }
                 startTimer(id, totalSeconds);
-                setEditingTimerId(null);
+                setEditingTimeButton(null);
+                setTimeInput('');
             };
 
             const restartTimer = (id) => {
@@ -1119,9 +1146,11 @@
                 const hasTimer = column === 'deferred' && endTime && (parseInt(endTime) > Date.now());
                 const showControls = column === 'deferred' && !hasTimer;
                 const isSelected = selectedButtons.some(s => s.id === id);
+                const isEditingTime = editingTimeButton === id;
                 return (
-                    <div key={id} style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative' }}>
                         <button
+                            key={id}
                             id={id}
                             className={`${column} ${isSelected ? 'selected' : ''}`}
                             draggable
@@ -1137,7 +1166,7 @@
                                     {hasTimer && (
                                         <>
                                             <div className="timer" id={`timer-${id}`}></div>
-                                            <button className="edit-time-btn" onClick={() => promptNFTForCustomTime(id)}>🖋️</button>
+                                            <button className="edit-time-btn" onClick={() => setEditingTimeButton(isEditingTime ? null : id)}>🖋️</button>
                                         </>
                                     )}
                                 </div>
@@ -1149,33 +1178,16 @@
                                 </>
                             )}
                         </button>
-                        {editingTimerId === id && (
+                        {isEditingTime && (
                             <div className="time-input-container">
                                 <input
                                     type="text"
-                                    value={timerInput.hours}
-                                    onChange={(e) => handleTimerInputChange('hours', e.target.value)}
-                                    placeholder="HH"
-                                    maxLength={2}
+                                    className="time-input"
+                                    value={timeInput}
+                                    onChange={(e) => setTimeInput(e.target.value)}
+                                    placeholder="HH:MM:SS"
                                 />
-                                <span>:</span>
-                                <input
-                                    type="text"
-                                    value={timerInput.minutes}
-                                    onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
-                                    placeholder="MM"
-                                    maxLength={2}
-                                />
-                                <span>:</span>
-                                <input
-                                    type="text"
-                                    value={timerInput.seconds}
-                                    onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
-                                    placeholder="SS"
-                                    maxLength={2}
-                                />
-                                <button onClick={() => submitTimer(id)}>OK</button>
-                                <button onClick={() => setEditingTimerId(null)}>Отмена</button>
+                                <button className="time-input-btn" onClick={() => setCustomTime(id)}>OK</button>
                             </div>
                         )}
                     </div>
@@ -1263,17 +1275,17 @@
                                         {buttons[column].length}
                                         {column === 'deferred' && (
                                             <>
-                                                <button className="add-button" onClick={() => setShowAddDeferredInput(true)}>+</button>
-                                                {showAddDeferredInput && (
-                                                    <div className="add-deferred-input">
+                                                <button className="add-button" onClick={() => setShowDeferredInput(!showDeferredInput)}>+</button>
+                                                {showDeferredInput && (
+                                                    <div className="deferred-input-container">
                                                         <input
                                                             type="number"
-                                                            value={newDeferredNum}
-                                                            onChange={(e) => setNewDeferredNum(e.target.value)}
-                                                            placeholder="Номер"
+                                                            className="deferred-input"
+                                                            value={deferredInput}
+                                                            onChange={(e) => setDeferredInput(e.target.value)}
+                                                            placeholder="Номер кнопки"
                                                         />
-                                                        <button onClick={addSingleDeferredButton}>OK</button>
-                                                        <button onClick={() => setShowAddDeferredInput(false)}>Отмена</button>
+                                                        <button className="deferred-input-btn" onClick={addSingleDeferredButton}>OK</button>
                                                     </div>
                                                 )}
                                             </>
