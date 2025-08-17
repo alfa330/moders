@@ -794,24 +794,29 @@
                 }
             };
 
-            const loadColumnState = () => {
-                const loadedButtons = {};
-                ['pending', 'completed', 'deferred'].forEach(columnId => {
-                    const buttonIds = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
-                    loadedButtons[columnId] = buttonIds.map(id => ({ id, num: id.split('-')[1] }));
-                });
-                setButtons(loadedButtons);
-                // Restore timers for deferred
-                loadedButtons.deferred.forEach(btn => {
-                    const endTime = localStorage.getItem(`timer_${btn.id}`);
-                    if (endTime) {
-                        const remaining = Math.floor((parseInt(endTime) - Date.now()) / 1000);
-                        if (remaining > 0) {
-                            startTimer(btn.id, remaining);
-                        }
-                    }
-                });
-            };
+			const loadColumnState = () => {
+			    const loadedButtons = {};
+			    ['pending', 'completed', 'deferred'].forEach(columnId => {
+			        const buttonIds = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
+			        loadedButtons[columnId] = buttonIds.map(id => ({ id, num: id.split('-')[1] }));
+			    });
+			    setButtons(loadedButtons);
+			
+			    // Восстановление таймеров для deferred
+			    loadedButtons.deferred.forEach(btn => {
+			        const endTime = localStorage.getItem(`timer_${btn.id}`);
+			        if (endTime) {
+			            const remaining = Math.floor((parseInt(endTime) - Date.now()) / 1000);
+			            if (remaining > 0) {
+			                // Запускаем таймер заново
+			                startTimer(btn.id, remaining);
+			            } else {
+			                // Таймер истёк, но кнопку НЕ убираем
+			                localStorage.setItem(`timer_${btn.id}`, 0);
+			            }
+			        }
+			    });
+			};
 
             const saveColumnState = () => {
                 Object.keys(buttons).forEach(columnId => {
