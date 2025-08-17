@@ -679,6 +679,10 @@
                 }
             }, [loggedIn]);
 
+            useEffect(() => {
+                saveColumnState();
+            }, [buttons]);
+
             const fetchActiveOperators = async () => {
                 setIsFetchingOperators(true);
                 try {
@@ -841,7 +845,6 @@
                     }
                 }
                 setButtons({ ...buttons, pending: newPending });
-                saveColumnState();
                 showNotification('Кнопки добавлены!');
             };
 
@@ -854,7 +857,6 @@
                 const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
                 setButtons({ ...buttons, deferred: newDeferred });
                 startTimer(id, 900); // initial 15 min
-                saveColumnState();
                 showNotification(`Кнопка ${parsedNum} добавлена!`);
             };
 
@@ -919,7 +921,6 @@
                         completed: [...prev.completed, btn]
                     };
                 });
-                saveColumnState();
             };
 
             const handleButtonClick = (e, btn, column) => {
@@ -949,7 +950,6 @@
                     });
                     return newButtons;
                 });
-                saveColumnState();
                 setSelectedButtons(prev => prev.filter(s => s.id !== id));
                 showNotification('Кнопка удалена!');
             };
@@ -990,7 +990,6 @@
                     });
                     return newButtons;
                 });
-                saveColumnState();
             };
 
             const dropInTrash = (e) => {
@@ -1007,7 +1006,6 @@
                     localStorage.removeItem(`restartCount_${btn.id}`);
                 });
                 setButtons(prev => ({ ...prev, [columnId]: [] }));
-                saveColumnState();
                 showNotification(`Колонка "${columnId}" очищена!`);
             };
 
