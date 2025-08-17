@@ -797,33 +797,40 @@
 			const loadColumnState = () => {
 			    const loadedButtons = {};
 			    ['pending', 'completed', 'deferred'].forEach(columnId => {
-			        const buttonIds = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
-			        loadedButtons[columnId] = buttonIds.map(id => ({ id, num: id.split('-')[1] }));
-			    });
-			    setButtons(loadedButtons);
+			        const buttonData = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
 			
-			    // Восстановление таймеров для deferred
-			    loadedButtons.deferred.forEach(btn => {
-			        const endTime = localStorage.getItem(`timer_${btn.id}`);
-			        if (endTime) {
-			            const remaining = Math.floor((parseInt(endTime) - Date.now()) / 1000);
-			            if (remaining > 0) {
-			                // Запускаем таймер заново
-			                startTimer(btn.id, remaining);
-			            } else {
-			                // Таймер истёк, но кнопку НЕ убираем
-			                localStorage.setItem(`timer_${btn.id}`, 0);
-			            }
+			        loadedButtons[columnId] = buttonData.map(data => ({
+			            id: data.id,
+			            num: data.num
+			        }));
+			
+			        if (columnId === 'deferred') {
+			            buttonData.forEach(data => {
+			                if (data.endTime && parseInt(data.endTime) > Date.now()) {
+			                    const remaining = Math.floor((parseInt(data.endTime) - Date.now()) / 1000);
+			                    if (remaining > 0) {
+			                        startTimer(data.id, remaining);
+			                    }
+			                }
+			            });
 			        }
 			    });
+			    setButtons(loadedButtons);
 			};
 
-            const saveColumnState = () => {
-                Object.keys(buttons).forEach(columnId => {
-                    const buttonIds = buttons[columnId].map(btn => btn.id);
-                    localStorage.setItem(`${columnId}Buttons`, JSON.stringify(buttonIds));
-                });
-            };
+			const saveColumnState = () => {
+			    Object.keys(buttons).forEach(columnId => {
+			        const state = buttons[columnId].map(btn => {
+			            const endTime = localStorage.getItem(`timer_${btn.id}`) || null;
+			            return {
+			                id: btn.id,
+			                num: btn.num,
+			                endTime
+			            };
+			        });
+			        localStorage.setItem(`${columnId}Buttons`, JSON.stringify(state));
+			    });
+			};
 
             const showNotification = (message) => {
                 setNotification({ message, show: true });
@@ -863,28 +870,28 @@
                 showNotification(`Кнопка ${parsedNum} добавлена!`);
             };
 
-			const startTimer = (id, duration) => {
-			    const endTime = Date.now() + duration * 1000;
-			    localStorage.setItem(`timer_${id}`, endTime);  // сохраняем время окончания
-			    const interval = setInterval(() => {
-			        const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-			        const timerEl = document.getElementById(`timer-${id}`);
-			        if (timerEl) {
-			            const minutes = Math.floor(timeLeft / 60);
-			            const seconds = timeLeft % 60;
-			            timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-			        }
-			        if (timeLeft <= 0) {
-			            clearInterval(interval);
-			            timersRef.current.delete(id);
-			            localStorage.setItem(`timer_${id}`, 0); // ⬅️ вместо remove
-			            const buttonId = id.split('-')[1];
-			            window.open(`https://backend.yataxi.kz/admin/list-tickets/${buttonId}`, '_blank');
-			            setButtons(prev => ({ ...prev })); // Обновляем, но не удаляем кнопку
-			        }
-			    }, 1000);
-			    timersRef.current.set(id, interval);
-			};
+            const startTimer = (id, duration) => {
+                const endTime = Date.now() + duration * 1000;
+                localStorage.setItem(`timer_${id}`, endTime);
+                const interval = setInterval(() => {
+                    const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+                    const timerEl = document.getElementById(`timer-${id}`);
+                    if (timerEl) {
+                        const minutes = Math.floor(timeLeft / 60);
+                        const seconds = timeLeft % 60;
+                        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    }
+                    if (timeLeft <= 0) {
+                        clearInterval(interval);
+                        timersRef.current.delete(id);
+                        localStorage.removeItem(`timer_${id}`);
+                        const buttonId = id.split('-')[1];
+                        window.open(`https://backend.yataxi.kz/admin/list-tickets/${buttonId}`, '_blank');
+                        setButtons(prev => ({ ...prev })); // Force re-render
+                    }
+                }, 1000);
+                timersRef.current.set(id, interval);
+            };
 
             const promptForCustomTime = (id) => {
                 const userInput = prompt('Введите время в минутах:');
@@ -1041,45 +1048,44 @@
                 showNotification('Текст скопирован!');
             };
 
-			const renderButton = (btn, column) => {
-			    const id = btn.id;
-			    const endTime = localStorage.getItem(`timer_${id}`);
-			    const hasTimer = column === 'deferred' && endTime && parseInt(endTime) > Date.now();
-			    const showControls = column === 'deferred' && (!endTime || parseInt(endTime) <= Date.now());
-			    const isSelected = selectedButtons.some(s => s.id === id);
-			
-			    return (
-			        <button
-			            key={id}
-			            id={id}
-			            className={`${column} ${isSelected ? 'selected' : ''}`}
-			            draggable
-			            onDragStart={(e) => dragStart(e, btn)}
-			            onDragEnd={dragEnd}
-			            onClick={(e) => handleButtonClick(e, btn, column)}
-			            onDoubleClick={() => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank')}
-			            onContextMenu={(e) => { e.preventDefault(); deleteButton(btn); }}
-			        >
-			            Кнопка {btn.num}
-			            {column === 'deferred' && (
-			                <div className="timer-container">
-			                    {hasTimer && (
-			                        <>
-			                            <div className="timer" id={`timer-${id}`}></div>
-			                            <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
-			                        </>
-			                    )}
-			                </div>
-			            )}
-			            {showControls && (
-			                <>
-			                    <button className="timer-control" onClick={() => restartTimer(id)}>↻</button>
-			                    <button className="timer-control" onClick={() => completeTask(id, column)}>✔</button>
-			                </>
-			            )}
-			        </button>
-			    );
-			};
+            const renderButton = (btn, column) => {
+                const id = btn.id;
+                const endTime = localStorage.getItem(`timer_${id}`);
+                const hasTimer = column === 'deferred' && endTime && (parseInt(endTime) > Date.now());
+                const showControls = column === 'deferred' && !hasTimer;
+                const isSelected = selectedButtons.some(s => s.id === id);
+                return (
+                    <button
+                        key={id}
+                        id={id}
+                        className={`${column} ${isSelected ? 'selected' : ''}`}
+                        draggable
+                        onDragStart={(e) => dragStart(e, btn)}
+                        onDragEnd={dragEnd}
+                        onClick={(e) => handleButtonClick(e, btn, column)}
+                        onDoubleClick={() => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank')}
+                        onContextMenu={(e) => { e.preventDefault(); deleteButton(btn); }}
+                    >
+                        Кнопка {btn.num}
+                        {column === 'deferred' && (
+                            <div className="timer-container">
+                                {hasTimer && (
+                                    <>
+                                        <div className="timer" id={`timer-${id}`}></div>
+                                        <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        {showControls && (
+                            <>
+                                <button className="timer-control" onClick={() => restartTimer(id)}>↻</button>
+                                <button className="timer-control" onClick={() => completeTask(id, column)}>✔</button>
+                            </>
+                        )}
+                    </button>
+                );
+            };
 
             if (!loggedIn) {
                 return (
