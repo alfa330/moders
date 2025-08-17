@@ -29,20 +29,20 @@
         }
 
         body {
-            --bg-image: url('https://iili.io/3i4Bo2R.webp');
-            background-color: var(--bg-color);
-            background-image: var(--bg-image), var(--gradient-light, none);
-            background-attachment: fixed;
-            background-size: cover, auto;
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            transition: all 0.4s ease-in-out;
-            margin: 0;
-            min-height: 100vh;
-            padding-bottom: 0px;
-            position: relative;
-            overflow-x: hidden;
-        }
+	    --bg-image: url('https://iili.io/3i4Bo2R.webp');
+	    background-color: var(--bg-color);
+	    background-image: var(--bg-image), var(--gradient-light, none);
+	    background-attachment: fixed;
+	    background-size: cover, auto;
+	    color: var(--text-color);
+	    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	    transition: all 0.4s ease-in-out;
+	    margin: 0;
+	    min-height: 100vh;
+	    padding-bottom: 0px;
+	    position: relative;
+	    overflow-x: hidden;
+	}
 
         .petals {
             position: fixed;
@@ -313,20 +313,20 @@
             transform: translateY(-2px);
         }
 
-        body.dark {
-            --bg-color: #2f1b24;
-            --text-color: #f4c4ce;
-            --button-bg: #e07b8c;
-            --button-hover: #f8b8c6;
-            --column-bg: rgba(47, 27, 36, 0.9);
-            --border-color: #6b4e5a;
-            --trash-bg: #c62828;
-            --trash-hover: #b71c1c;
-            --notification-bg: #ff6b6b;
-            --gradient-light: var(--gradient-dark, none);
-            --shadow-light: var(--shadow-dark, none);
-            --bg-image: url('https://iili.io/3i4BqBa.webp');
-        }
+	body.dark {
+	    --bg-color: #2f1b24;
+	    --text-color: #f4c4ce;
+	    --button-bg: #e07b8c;
+	    --button-hover: #f8b8c6;
+	    --column-bg: rgba(47, 27, 36, 0.9);
+	    --border-color: #6b4e5a;
+	    --trash-bg: #c62828;
+	    --trash-hover: #b71c1c;
+	    --notification-bg: #ff6b6b;
+	    --gradient-light: var(--gradient-dark, none);
+	    --shadow-light: var(--shadow-dark, none);
+	    --bg-image: url('https://iili.io/3i4BqBa.webp');
+	}
 
         .selected {
             outline: 3px solid #ff8c94;
@@ -366,13 +366,13 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
-        }
-
-        .add-button:hover {
-            transform: none;
-            background: #fff;
-            color: #000;
-        }
+      	}
+      
+      	.add-button:hover {
+     		transform: none;
+          	background: #fff;
+		color: #000;
+      	}
 
         .sidebar-toggle {
             position: fixed;
@@ -386,13 +386,13 @@
             font-size: 24px;
             z-index: 1100;
             padding: 0;
-            transition: left 0.3s ease-in-out;
-            border-radius: 0 10px 10px 0;
+          	transition: left 0.3s ease-in-out;
+          	border-radius: 0 10px 10px 0;
         }
-
-        .sidebar-toggle.open {
-            left: 300px;
-        }
+      
+      	.sidebar-toggle.open {
+      		left: 300px;
+      }
 
         .sidebar {
             position: fixed;
@@ -407,9 +407,8 @@
             transition: left 0.3s ease-in-out;
             overflow-y: auto;
         }
-
         .sidebar input {
-            width: 100%;
+            width: 100%;    
         }
 
         .sidebar.open {
@@ -428,7 +427,7 @@
 
         .chekmarkbox > input {
             width: 16px;
-            margin-right: 10px;
+          	margin-right: 10px;
         }
 
         .name-item {
@@ -437,9 +436,9 @@
         }
 
         .name-item > button {
-            font-size: 12px;
-            padding: 8px 16px;
-        }
+        	font-size: 12px;
+          	padding 8px 16px;
+      	}
 
         .name-list {
             max-height: 400px;
@@ -533,24 +532,19 @@
         }
 
         .time-input-container {
-            position: absolute;
-            bottom: -40px;
-            left: 0;
-            right: 0;
             display: flex;
-            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
             align-items: center;
-            gap: 5px;
         }
 
         .time-input {
+            width: 60px;
             padding: 8px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            box-shadow: var(--shadow-light);
-            width: 120px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
             background: #fff;
+            font-size: 14px;
             text-align: center;
         }
 
@@ -559,54 +553,39 @@
             box-shadow: 0 0 8px rgba(248, 184, 198, 0.3);
         }
 
-        .time-input-btn {
-            font-size: 12px;
+        .time-input-submit {
             padding: 8px 12px;
+            font-size: 14px;
             background-color: #4a2f3b;
             color: #fff;
             border-radius: 6px;
             cursor: pointer;
         }
 
-        .time-input-btn:hover {
+        .time-input-submit:hover {
             background-color: #6b4e5a;
         }
 
-        .deferred-input-container {
+        .add-deferred-input-container {
             display: flex;
-            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
             align-items: center;
-            gap: 5px;
-            margin-top: 10px;
         }
 
-        .deferred-input {
-            padding: 8px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            box-shadow: var(--shadow-light);
+        .add-deferred-input {
             width: 100px;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
             background: #fff;
+            font-size: 14px;
             text-align: center;
         }
 
-        .deferred-input:focus {
+        .add-deferred-input:focus {
             outline: 2px solid var(--button-bg);
             box-shadow: 0 0 8px rgba(248, 184, 198, 0.3);
-        }
-
-        .deferred-input-btn {
-            font-size: 12px;
-            padding: 8px 12px;
-            background-color: #4a2f3b;
-            color: #fff;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .deferred-input-btn:hover {
-            background-color: #6b4e5a;
         }
 
         @media (max-width: 768px) {
@@ -624,8 +603,8 @@
             .login-container { width: 90%; padding: 30px; border-radius: 15px; }
             .user-info { top: 0px; right: 0px; flex-direction: row; gap: 5px; padding: 8px; border-radius: 0 0 0 10px; }
         }
-
-        ::-webkit-scrollbar {
+      
+      	::-webkit-scrollbar {
             width: 10px;
             height: 10px;
         }
@@ -638,21 +617,20 @@
         ::-webkit-scrollbar-thumb {
             background-color: var(--button-bg);
             border-radius: 10px;
-            border: 2px solid var(--column-bg);
+            border: 2px solid var(--column-bg); /* for padding-like effect */
         }
 
         ::-webkit-scrollbar-thumb:hover {
             background-color: var(--button-hover);
         }
+	body.dark ::-webkit-scrollbar-thumb {
+  	   background-color: var(--button-bg);
+ 	   border: 2px solid var(--column-bg);
+	}
 
-        body.dark ::-webkit-scrollbar-thumb {
-            background-color: var(--button-bg);
-            border: 2px solid var(--column-bg);
-        }
-
-        body.dark ::-webkit-scrollbar-thumb:hover {
-            background-color: var(--button-hover);
-        }
+	body.dark ::-webkit-scrollbar-thumb:hover {
+   	   background-color: var(--button-hover);
+	}
 
         .loader {
             border: 4px solid rgba(255, 255, 255, 0.3);
@@ -709,37 +687,37 @@
             const [isFetchingOperators, setIsFetchingOperators] = useState(false);
             const [isTogglingActive, setIsTogglingActive] = useState(false);
             const [isDividing, setIsDividing] = useState(false);
-            const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
+	    const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
             const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-            const [editingTimeButton, setEditingTimeButton] = useState(null);
-            const [timeInput, setTimeInput] = useState('');
-            const [deferredInput, setDeferredInput] = useState('');
-            const [showDeferredInput, setShowDeferredInput] = useState(false);
+            const [editingTimerId, setEditingTimerId] = useState(null);
+            const [timeInput, setTimeInput] = useState({ hours: '', minutes: '', seconds: '' });
+            const [showAddDeferredInput, setShowAddDeferredInput] = useState(false);
+            const [newDeferredNum, setNewDeferredNum] = useState('');
 
-            const generateReport = async () => {
+	    const generateReport = async () => {
                 setIsGeneratingReport(true);
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/report/monthly?month=${month}`, {
-                        headers: {
-                            'X-API-Key': userData.apiKey,
-                            'X-User-Id': userData.id
-                        }
-                    });
-                    if (!response.ok) throw new Error('Failed');
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'report.xlsx';
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                } catch (e) {
-                    showNotification('Error generating report');
-                } finally {
-                    setIsGeneratingReport(false);
-                }
-            };
+		    try {
+		        const response = await fetch(`${API_BASE_URL}/api/report/monthly?month=${month}`, {
+		            headers: {
+		                'X-API-Key': userData.apiKey,
+		                'X-User-Id': userData.id
+		            }
+		        });
+		        if (!response.ok) throw new Error('Failed');
+		        const blob = await response.blob();
+		        const url = window.URL.createObjectURL(blob);
+		        const a = document.createElement('a');
+		        a.href = url;
+		        a.download = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'report.xlsx';
+		        document.body.appendChild(a);
+		        a.click();
+		        a.remove();
+		    } catch (e) {
+		        showNotification('Error generating report');
+		    } finally {
+                        setIsGeneratingReport(false);
+                    }
+		};
 
             useEffect(() => {
                 document.body.classList.toggle('dark', theme === 'dark');
@@ -931,26 +909,26 @@
             };
 
             const addSingleDeferredButton = () => {
-                const parsedNum = parseInt(deferredInput);
+                const parsedNum = parseInt(newDeferredNum);
                 if (isNaN(parsedNum) || parsedNum < 1) {
                     showNotification('Введите корректный номер!');
-                    setDeferredInput('');
-                    setShowDeferredInput(false);
+                    setShowAddDeferredInput(false);
+                    setNewDeferredNum('');
                     return;
                 }
                 const id = `button-${parsedNum}`;
                 if (Object.values(buttons).flat().some(b => b.id === id)) {
                     showNotification('Кнопка уже существует!');
-                    setDeferredInput('');
-                    setShowDeferredInput(false);
+                    setShowAddDeferredInput(false);
+                    setNewDeferredNum('');
                     return;
                 }
                 const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
                 setButtons({ ...buttons, deferred: newDeferred });
                 startTimer(id, 900);
                 showNotification(`Кнопка ${parsedNum} добавлена!`);
-                setDeferredInput('');
-                setShowDeferredInput(false);
+                setShowAddDeferredInput(false);
+                setNewDeferredNum('');
             };
 
             const startTimer = (id, duration) => {
@@ -960,9 +938,10 @@
                     const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
                     const timerEl = document.getElementById(`timer-${id}`);
                     if (timerEl) {
-                        const minutes = Math.floor(timeLeft / 60);
+                        const hours = Math.floor(timeLeft / 3600);
+                        const minutes = Math.floor((timeLeft % 3600) / 60);
                         const seconds = timeLeft % 60;
-                        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                        timerEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
                     }
                     if (timeLeft <= 0) {
                         clearInterval(interval);
@@ -977,19 +956,13 @@
             };
 
             const setCustomTime = (id) => {
-                const timeRegex = /^(\d{2}):(\d{2}):(\d{2})$/;
-                if (!timeRegex.test(timeInput)) {
-                    showNotification('Введите время в формате HH:MM:SS!');
-                    return;
-                }
-                const [hours, minutes, seconds] = timeInput.split(':').map(Number);
-                if (hours > 23 || minutes > 59 || seconds > 59) {
-                    showNotification('Некорректное время!');
-                    return;
-                }
-                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                const { hours, minutes, seconds } = timeInput;
+                const h = parseInt(hours) || 0;
+                const m = parseInt(minutes) || 0;
+                const s = parseInt(seconds) || 0;
+                const totalSeconds = h * 3600 + m * 60 + s;
                 if (totalSeconds <= 0) {
-                    showNotification('Время должно быть больше 0!');
+                    showNotification('Введите корректное время!');
                     return;
                 }
                 if (timersRef.current.has(id)) {
@@ -997,8 +970,8 @@
                     timersRef.current.delete(id);
                 }
                 startTimer(id, totalSeconds);
-                setEditingTimeButton(null);
-                setTimeInput('');
+                setEditingTimerId(null);
+                setTimeInput({ hours: '', minutes: '', seconds: '' });
             };
 
             const restartTimer = (id) => {
@@ -1146,7 +1119,6 @@
                 const hasTimer = column === 'deferred' && endTime && (parseInt(endTime) > Date.now());
                 const showControls = column === 'deferred' && !hasTimer;
                 const isSelected = selectedButtons.some(s => s.id === id);
-                const isEditingTime = editingTimeButton === id;
                 return (
                     <div style={{ position: 'relative' }}>
                         <button
@@ -1166,7 +1138,7 @@
                                     {hasTimer && (
                                         <>
                                             <div className="timer" id={`timer-${id}`}></div>
-                                            <button className="edit-time-btn" onClick={() => setEditingTimeButton(isEditingTime ? null : id)}>🖋️</button>
+                                            <button className="edit-time-btn" onClick={() => setEditingTimerId(id)}>🖋️</button>
                                         </>
                                     )}
                                 </div>
@@ -1178,16 +1150,38 @@
                                 </>
                             )}
                         </button>
-                        {isEditingTime && (
+                        {editingTimerId === id && (
                             <div className="time-input-container">
                                 <input
-                                    type="text"
+                                    type="number"
                                     className="time-input"
-                                    value={timeInput}
-                                    onChange={(e) => setTimeInput(e.target.value)}
-                                    placeholder="HH:MM:SS"
+                                    placeholder="HH"
+                                    value={timeInput.hours}
+                                    onChange={(e) => setTimeInput({ ...timeInput, hours: e.target.value })}
+                                    min="0"
+                                    max="23"
                                 />
-                                <button className="time-input-btn" onClick={() => setCustomTime(id)}>OK</button>
+                                <span>:</span>
+                                <input
+                                    type="number"
+                                    className="time-input"
+                                    placeholder="MM"
+                                    value={timeInput.minutes}
+                                    onChange={(e) => setTimeInput({ ...timeInput, minutes: e.target.value })}
+                                    min="0"
+                                    max="59"
+                                />
+                                <span>:</span>
+                                <input
+                                    type="number"
+                                    className="time-input"
+                                    placeholder="SS"
+                                    value={timeInput.seconds}
+                                    onChange={(e) => setTimeInput({ ...timeInput, seconds: e.target.value })}
+                                    min="0"
+                                    max="59"
+                                />
+                                <button className="time-input-submit" onClick={() => setCustomTime(id)}>OK</button>
                             </div>
                         )}
                     </div>
@@ -1227,11 +1221,11 @@
                             <button onClick={copyResult}>Скопировать</button>
                             {userData.role !== 'operator' && (
                                 <>
-                                    <input
-                                        type="month"
-                                        value={month}
-                                        onChange={(e) => setMonth(e.target.value)}
-                                        placeholder="Месяц YYYY-MM"
+                                    <input 
+                                        type="month" 
+                                        value={month} 
+                                        onChange={(e) => setMonth(e.target.value)} 
+                                        placeholder="Месяц YYYY-MM" 
                                     />
                                     <button onClick={generateReport} disabled={isGeneratingReport}>
                                         {isGeneratingReport ? <div className="loader"></div> : 'Отчет'}
@@ -1274,23 +1268,22 @@
                                     <div className="counter" id={`${column}Count`}>
                                         {buttons[column].length}
                                         {column === 'deferred' && (
-                                            <>
-                                                <button className="add-button" onClick={() => setShowDeferredInput(!showDeferredInput)}>+</button>
-                                                {showDeferredInput && (
-                                                    <div className="deferred-input-container">
-                                                        <input
-                                                            type="number"
-                                                            className="deferred-input"
-                                                            value={deferredInput}
-                                                            onChange={(e) => setDeferredInput(e.target.value)}
-                                                            placeholder="Номер кнопки"
-                                                        />
-                                                        <button className="deferred-input-btn" onClick={addSingleDeferredButton}>OK</button>
-                                                    </div>
-                                                )}
-                                            </>
+                                            <button className="add-button" onClick={() => setShowAddDeferredInput(!showAddDeferredInput)}>+</button>
                                         )}
                                     </div>
+                                    {column === 'deferred' && showAddDeferredInput && (
+                                        <div className="add-deferred-input-container">
+                                            <input
+                                                type="number"
+                                                className="add-deferred-input"
+                                                placeholder="Номер кнопки"
+                                                value={newDeferredNum}
+                                                onChange={(e) => setNewDeferredNum(e.target.value)}
+                                                min="1"
+                                            />
+                                            <button className="time-input-submit" onClick={addSingleDeferredButton}>OK</button>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
