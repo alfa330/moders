@@ -39,7 +39,9 @@
             transition: all 0.4s ease-in-out;
             margin: 0;
             min-height: 100vh;
-            padding-bottom: 0 stick;
+            padding-bottom: 0px;
+            position: relative;
+            overflow-x: hidden;
         }
 
         .petals {
@@ -231,6 +233,10 @@
             cursor: pointer;
         }
 
+        .timer-control:hover {
+            background-color: #6b4e5a;
+        }
+
         .trash-bin {
             width: 250px;
             height: 50px;
@@ -402,6 +408,10 @@
             overflow-y: auto;
         }
 
+        .sidebar input {
+            width: 100%;
+        }
+
         .sidebar.open {
             left: 0;
         }
@@ -526,47 +536,44 @@
             display: flex;
             gap: 5px;
             margin-top: 5px;
-            padding: 5px;
-            background: var(--column-bg);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
             border-radius: 8px;
             box-shadow: var(--shadow-light);
         }
 
-        .time-input {
-            width: 60px;
-            padding: 5px;
-            border: none;
-            border-radius: 5px;
+        .time-input-container input {
+            width: 50px;
+            padding: 6px;
             font-size: 14px;
             text-align: center;
-            background: #fff;
-            box-shadow: var(--shadow-light);
         }
 
-        .time-input:focus {
-            outline: 2px solid var(--button-bg);
-            box-shadow: 0 0 8px rgba(248, 184, 198, 0.3);
+        .time-input-container button {
+            padding: 6px 12px;
+            font-size: 14px;
         }
 
-        .add-button-input-container {
+        .add-deferred-input {
             display: flex;
             gap: 5px;
-            align-items: center;
-        }
-
-        .add-button-input {
-            width: 100px;
-            padding: 5px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            background: #fff;
+            margin-top: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 8px;
             box-shadow: var(--shadow-light);
         }
 
-        .add-button-input:focus {
-            outline: 2px solid var(--button-bg);
-            box-shadow: 0 0 8px rgba(248, 184, 198, 0.3);
+        .add-deferred-input input {
+            width: 100px;
+            padding: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .add-deferred-input button {
+            padding: 6px 12px;
+            font-size: 14px;
         }
 
         @media (max-width: 768px) {
@@ -583,6 +590,8 @@
             .sidebar-toggle { width: 40px; height: 40px; font-size: 20px; }
             .login-container { width: 90%; padding: 30px; border-radius: 15px; }
             .user-info { top: 0px; right: 0px; flex-direction: row; gap: 5px; padding: 8px; border-radius: 0 0 0 10px; }
+            .time-input-container input { width: 40px; }
+            .add-deferred-input input { width: 80px; }
         }
 
         ::-webkit-scrollbar {
@@ -672,11 +681,9 @@
             const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
             const [isGeneratingReport, setIsGeneratingReport] = useState(false);
             const [editingTimerId, setEditingTimerId] = useState(null);
-            const [timerHours, setTimerHours] = useState('');
-            const [timerMinutes, setTimerMinutes] = useState('');
-            const [timerSeconds, setTimerSeconds] = useState('');
-            const [showAddButtonInput, setShowAddButtonInput] = useState(false);
-            const [newButtonNumber, setNewButtonNumber] = useState('');
+            const [timerInput, setTimerInput] = useState({ hours: '', minutes: '', seconds: '' });
+            const [showAddDeferredInput, setShowAddDeferredInput] = useState(false);
+            const [newDeferredNum, setNewDeferredNum] = useState('');
 
             const generateReport = async () => {
                 setIsGeneratingReport(true);
@@ -893,26 +900,26 @@
             };
 
             const addSingleDeferredButton = () => {
-                const parsedNum = parseInt(newButtonNumber);
+                const parsedNum = parseInt(newDeferredNum);
                 if (isNaN(parsedNum) || parsedNum < 1) {
                     showNotification('Введите корректный номер!');
-                    setShowAddButtonInput(false);
-                    setNewButtonNumber('');
+                    setNewDeferredNum('');
+                    setShowAddDeferredInput(false);
                     return;
                 }
                 const id = `button-${parsedNum}`;
                 if (Object.values(buttons).flat().some(b => b.id === id)) {
                     showNotification('Кнопка уже существует!');
-                    setShowAddButtonInput(false);
-                    setNewButtonNumber('');
+                    setNewDeferredNum('');
+                    setShowAddDeferredInput(false);
                     return;
                 }
                 const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
                 setButtons({ ...buttons, deferred: newDeferred });
                 startTimer(id, 900);
                 showNotification(`Кнопка ${parsedNum} добавлена!`);
-                setShowAddButtonInput(false);
-                setNewButtonNumber('');
+                setNewDeferredNum('');
+                setShowAddDeferredInput(false);
             };
 
             const startTimer = (id, duration) => {
@@ -938,35 +945,25 @@
                 timersRef.current.set(id, interval);
             };
 
-            const promptForCustomTime = (id) => {
+            const promptNFTForCustomTime = (id) => {
                 setEditingTimerId(id);
-                const endTime = localStorage.getItem(`timer_${id}`);
-                if (endTime) {
-                    const timeLeft = Math.max(0, Math.floor((parseInt(endTime) - Date.now()) / 1000));
-                    const hours = Math.floor(timeLeft / 3600);
-                    const minutes = Math.floor((timeLeft % 3600) / 60);
-                    const seconds = timeLeft % 60;
-                    setTimerHours(String(hours).padStart(2, '0'));
-                    setTimerMinutes(String(minutes).padStart(2, '0'));
-                    setTimerSeconds(String(seconds).padStart(2, '0'));
-                } else {
-                    setTimerHours('00');
-                    setTimerMinutes('15');
-                    setTimerSeconds('00');
-                }
+                setTimerInput({ hours: '00', minutes: '15', seconds: '00' });
             };
 
-            const submitCustomTime = (id) => {
-                const hours = parseInt(timerHours);
-                const minutes = parseInt(timerMinutes);
-                const seconds = parseInt(timerSeconds);
-                if (isNaN(hours) || isNaN(minutes) || isNaN(seconds) || hours < 0 || minutes < 0 || seconds < 0 || minutes > 59 || seconds > 59) {
-                    showNotification('Некорректное время!');
-                    return;
+            const handleTimerInputChange = (field, value) => {
+                let formattedValue = value.replace(/\D/g, '').slice(0, 2);
+                if (field !== 'hours' && parseInt(formattedValue) > 59) {
+                    formattedValue = '59';
                 }
-                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-                if (totalSeconds <= 0) {
-                    showNotification('Время должно быть больше 0!');
+                setTimerInput(prev => ({ ...prev, [field]: formattedValue.padStart(2, '0') }));
+            };
+
+            const submitTimer = (id) => {
+                const { hours, minutes, seconds } = timerInput;
+                const totalSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
+                if (isNaN(totalSeconds) || totalSeconds <= 0) {
+                    showNotification('Введите корректное время!');
+                    setEditingTimerId(null);
                     return;
                 }
                 if (timersRef.current.has(id)) {
@@ -975,9 +972,6 @@
                 }
                 startTimer(id, totalSeconds);
                 setEditingTimerId(null);
-                setTimerHours('');
-                setTimerMinutes('');
-                setTimerSeconds('');
             };
 
             const restartTimer = (id) => {
@@ -1126,9 +1120,8 @@
                 const showControls = column === 'deferred' && !hasTimer;
                 const isSelected = selectedButtons.some(s => s.id === id);
                 return (
-                    <div style={{ position: 'relative' }}>
+                    <div key={id} style={{ position: 'relative' }}>
                         <button
-                            key={id}
                             id={id}
                             className={`${column} ${isSelected ? 'selected' : ''}`}
                             draggable
@@ -1144,7 +1137,7 @@
                                     {hasTimer && (
                                         <>
                                             <div className="timer" id={`timer-${id}`}></div>
-                                            <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
+                                            <button className="edit-time-btn" onClick={() => promptNFTForCustomTime(id)}>🖋️</button>
                                         </>
                                     )}
                                 </div>
@@ -1159,36 +1152,30 @@
                         {editingTimerId === id && (
                             <div className="time-input-container">
                                 <input
-                                    type="number"
-                                    className="time-input"
-                                    value={timerHours}
-                                    onChange={(e) => setTimerHours(e.target.value)}
+                                    type="text"
+                                    value={timerInput.hours}
+                                    onChange={(e) => handleTimerInputChange('hours', e.target.value)}
                                     placeholder="HH"
-                                    min="0"
-                                    max="23"
+                                    maxLength={2}
                                 />
                                 <span>:</span>
                                 <input
-                                    type="number"
-                                    className="time-input"
-                                    value={timerMinutes}
-                                    onChange={(e) => setTimerMinutes(e.target.value)}
+                                    type="text"
+                                    value={timerInput.minutes}
+                                    onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
                                     placeholder="MM"
-                                    min="0"
-                                    max="59"
+                                    maxLength={2}
                                 />
                                 <span>:</span>
                                 <input
-                                    type="number"
-                                    className="time-input"
-                                    value={timerSeconds}
-                                    onChange={(e) => setTimerSeconds(e.target.value)}
+                                    type="text"
+                                    value={timerInput.seconds}
+                                    onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
                                     placeholder="SS"
-                                    min="0"
-                                    max="59"
+                                    maxLength={2}
                                 />
-                                <button className="timer-control" onClick={() => submitCustomTime(id)}>✔</button>
-                                <button className="timer-control" onClick={() => setEditingTimerId(null)}>✖</button>
+                                <button onClick={() => submitTimer(id)}>OK</button>
+                                <button onClick={() => setEditingTimerId(null)}>Отмена</button>
                             </div>
                         )}
                     </div>
@@ -1228,11 +1215,11 @@
                             <button onClick={copyResult}>Скопировать</button>
                             {userData.role !== 'operator' && (
                                 <>
-                                    <input 
-                                        type="month" 
-                                        value={month} 
-                                        onChange={(e) => setMonth(e.target.value)} 
-                                        placeholder="Месяц YYYY-MM" 
+                                    <input
+                                        type="month"
+                                        value={month}
+                                        onChange={(e) => setMonth(e.target.value)}
+                                        placeholder="Месяц YYYY-MM"
                                     />
                                     <button onClick={generateReport} disabled={isGeneratingReport}>
                                         {isGeneratingReport ? <div className="loader"></div> : 'Отчет'}
@@ -1275,29 +1262,21 @@
                                     <div className="counter" id={`${column}Count`}>
                                         {buttons[column].length}
                                         {column === 'deferred' && (
-                                            <div className="add-button-input-container">
-                                                <button 
-                                                    className="add-button" 
-                                                    onClick={() => setShowAddButtonInput(true)}
-                                                    style={{ display: showAddButtonInput ? 'none' : 'flex' }}
-                                                >
-                                                    +
-                                                </button>
-                                                {showAddButtonInput && (
-                                                    <>
+                                            <>
+                                                <button className="add-button" onClick={() => setShowAddDeferredInput(true)}>+</button>
+                                                {showAddDeferredInput && (
+                                                    <div className="add-deferred-input">
                                                         <input
                                                             type="number"
-                                                            className="add-button-input"
-                                                            value={newButtonNumber}
-                                                            onChange={(e) => setNewButtonNumber(e.target.value)}
+                                                            value={newDeferredNum}
+                                                            onChange={(e) => setNewDeferredNum(e.target.value)}
                                                             placeholder="Номер"
-                                                            autoFocus
                                                         />
-                                                        <button className="timer-control" onClick={addSingleDeferredButton}>✔</button>
-                                                        <button className="timer-control" onClick={() => setShowAddButtonInput(false)}>✖</button>
-                                                    </>
+                                                        <button onClick={addSingleDeferredButton}>OK</button>
+                                                        <button onClick={() => setShowAddDeferredInput(false)}>Отмена</button>
+                                                    </div>
                                                 )}
-                                            </div>
+                                            </>
                                         )}
                                     </div>
                                 </div>
