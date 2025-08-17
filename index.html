@@ -673,6 +673,10 @@
                 }
             }, []);
 
+			useEffect(() => {
+			    saveColumnState();
+			}, [buttons]);
+			
             useEffect(() => {
                 if (loggedIn) {
                     fetchActiveOperators();
@@ -794,44 +798,31 @@
                 }
             };
 
-			const loadColumnState = () => {
-			    const loadedButtons = {};
-			    ['pending', 'completed', 'deferred'].forEach(columnId => {
-			        const buttonData = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
-			
-			        loadedButtons[columnId] = buttonData.map(data => ({
-			            id: data.id,
-			            num: data.num
-			        }));
-			
-			        // восстановление таймеров
-			        if (columnId === 'deferred') {
-			            buttonData.forEach(data => {
-			                if (data.endTime) {
-			                    const remaining = Math.floor((parseInt(data.endTime) - Date.now()) / 1000);
-			                    if (remaining > 0) {
-			                        startTimer(data.id, remaining);
-			                    }
-			                }
-			            });
-			        }
-			    });
-			
-			    setButtons(loadedButtons);
-			};
+            const loadColumnState = () => {
+                const loadedButtons = {};
+                ['pending', 'completed', 'deferred'].forEach(columnId => {
+                    const buttonIds = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
+                    loadedButtons[columnId] = buttonIds.map(id => ({ id, num: id.split('-')[1] }));
+                });
+                setButtons(loadedButtons);
+                // Restore timers for deferred
+                loadedButtons.deferred.forEach(btn => {
+                    const endTime = localStorage.getItem(`timer_${btn.id}`);
+                    if (endTime) {
+                        const remaining = Math.floor((parseInt(endTime) - Date.now()) / 1000);
+                        if (remaining > 0) {
+                            startTimer(btn.id, remaining);
+                        }
+                    }
+                });
+            };
 
-			const saveColumnState = () => {
-			    Object.keys(buttons).forEach(columnId => {
-			        const state = buttons[columnId].map(btn => {
-			            return {
-			                id: btn.id,
-			                num: btn.num,
-			                endTime: localStorage.getItem(`timer_${btn.id}`) || null
-			            };
-			        });
-			        localStorage.setItem(`${columnId}Buttons`, JSON.stringify(state));
-			    });
-			};
+		    const saveColumnState = () => {
+		        Object.keys(buttons).forEach(columnId => {
+		            const buttonIds = buttons[columnId].map(btn => btn.id);
+		            localStorage.setItem(`${columnId}Buttons`, JSON.stringify(buttonIds));
+		        });
+		    };
 
             const showNotification = (message) => {
                 setNotification({ message, show: true });
@@ -854,7 +845,6 @@
                     }
                 }
                 setButtons({ ...buttons, pending: newPending });
-                saveColumnState();
                 showNotification('Кнопки добавлены!');
             };
 
@@ -867,7 +857,6 @@
                 const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
                 setButtons({ ...buttons, deferred: newDeferred });
                 startTimer(id, 900); // initial 15 min
-                saveColumnState();
                 showNotification(`Кнопка ${parsedNum} добавлена!`);
             };
 
@@ -932,7 +921,6 @@
                         completed: [...prev.completed, btn]
                     };
                 });
-                saveColumnState();
             };
 
             const handleButtonClick = (e, btn, column) => {
@@ -962,7 +950,6 @@
                     });
                     return newButtons;
                 });
-                saveColumnState();
                 setSelectedButtons(prev => prev.filter(s => s.id !== id));
                 showNotification('Кнопка удалена!');
             };
@@ -1003,7 +990,6 @@
                     });
                     return newButtons;
                 });
-                saveColumnState();
             };
 
             const dropInTrash = (e) => {
@@ -1020,7 +1006,6 @@
                     localStorage.removeItem(`restartCount_${btn.id}`);
                 });
                 setButtons(prev => ({ ...prev, [columnId]: [] }));
-                saveColumnState();
                 showNotification(`Колонка "${columnId}" очищена!`);
             };
 
