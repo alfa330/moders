@@ -804,9 +804,10 @@
 			            num: data.num
 			        }));
 			
+			        // восстановление таймеров
 			        if (columnId === 'deferred') {
 			            buttonData.forEach(data => {
-			                if (data.endTime && parseInt(data.endTime) > Date.now()) {
+			                if (data.endTime) {
 			                    const remaining = Math.floor((parseInt(data.endTime) - Date.now()) / 1000);
 			                    if (remaining > 0) {
 			                        startTimer(data.id, remaining);
@@ -815,17 +816,17 @@
 			            });
 			        }
 			    });
+			
 			    setButtons(loadedButtons);
 			};
 
 			const saveColumnState = () => {
 			    Object.keys(buttons).forEach(columnId => {
 			        const state = buttons[columnId].map(btn => {
-			            const endTime = localStorage.getItem(`timer_${btn.id}`) || null;
 			            return {
 			                id: btn.id,
 			                num: btn.num,
-			                endTime
+			                endTime: localStorage.getItem(`timer_${btn.id}`) || null
 			            };
 			        });
 			        localStorage.setItem(`${columnId}Buttons`, JSON.stringify(state));
