@@ -673,10 +673,6 @@
                 }
             }, []);
 
-			useEffect(() => {
-			    saveColumnState();
-			}, [buttons]);
-			
             useEffect(() => {
                 if (loggedIn) {
                     fetchActiveOperators();
@@ -817,12 +813,12 @@
                 });
             };
 
-		    const saveColumnState = () => {
-		        Object.keys(buttons).forEach(columnId => {
-		            const buttonIds = buttons[columnId].map(btn => btn.id);
-		            localStorage.setItem(`${columnId}Buttons`, JSON.stringify(buttonIds));
-		        });
-		    };
+            const saveColumnState = () => {
+                Object.keys(buttons).forEach(columnId => {
+                    const buttonIds = buttons[columnId].map(btn => btn.id);
+                    localStorage.setItem(`${columnId}Buttons`, JSON.stringify(buttonIds));
+                });
+            };
 
             const showNotification = (message) => {
                 setNotification({ message, show: true });
@@ -845,6 +841,7 @@
                     }
                 }
                 setButtons({ ...buttons, pending: newPending });
+                saveColumnState();
                 showNotification('Кнопки добавлены!');
             };
 
@@ -857,6 +854,7 @@
                 const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
                 setButtons({ ...buttons, deferred: newDeferred });
                 startTimer(id, 900); // initial 15 min
+                saveColumnState();
                 showNotification(`Кнопка ${parsedNum} добавлена!`);
             };
 
@@ -921,6 +919,7 @@
                         completed: [...prev.completed, btn]
                     };
                 });
+                saveColumnState();
             };
 
             const handleButtonClick = (e, btn, column) => {
@@ -950,6 +949,7 @@
                     });
                     return newButtons;
                 });
+                saveColumnState();
                 setSelectedButtons(prev => prev.filter(s => s.id !== id));
                 showNotification('Кнопка удалена!');
             };
@@ -990,6 +990,7 @@
                     });
                     return newButtons;
                 });
+                saveColumnState();
             };
 
             const dropInTrash = (e) => {
@@ -1006,6 +1007,7 @@
                     localStorage.removeItem(`restartCount_${btn.id}`);
                 });
                 setButtons(prev => ({ ...prev, [columnId]: [] }));
+                saveColumnState();
                 showNotification(`Колонка "${columnId}" очищена!`);
             };
 
