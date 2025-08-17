@@ -864,29 +864,39 @@
             };
 
             const startTimer = (id, duration) => {
-                const endTime = Date.now() + duration * 1000;
-                localStorage.setItem(`timer_${id}`, endTime);
-                const updateTimer = () => {
-                    const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-                    const timerEl = document.getElementById(`timer-${id}`);
-                    if (timerEl) {
-                        const minutes = Math.floor(timeLeft / 60);
-                        const seconds = timeLeft % 60;
-                        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                    }
-                    if (timeLeft <= 0) {
-                        clearInterval(timersRef.current.get(id));
-                        timersRef.current.delete(id);
-                        localStorage.removeItem(`timer_${id}`);
-                        const buttonId = id.split('-')[1];
-                        window.open(`https://backend.yataxi.kz/admin/list-tickets/${buttonId}`, '_blank');
-                        setButtons(prev => ({ ...prev })); // Force re-render
-                    }
-                };
-                const interval = setInterval(updateTimer, 1000);
-                timersRef.current.set(id, interval);
-                updateTimer(); // Immediate update and check
-            };
+			    const endTime = Date.now() + duration * 1000;
+			    localStorage.setItem(`timer_${id}`, endTime);
+			
+			    if (timersRef.current.has(id)) {
+			        clearInterval(timersRef.current.get(id));
+			        timersRef.current.delete(id);
+			    }
+			
+			    const interval = setInterval(() => {
+			        const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+			        const timerEl = document.getElementById(`timer-${id}`);
+			
+			        if (timerEl) {
+			            const minutes = Math.floor(timeLeft / 60);
+			            const seconds = timeLeft % 60;
+			            timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+			        }
+			
+			        if (timeLeft <= 0) {
+			            clearInterval(interval);
+			            timersRef.current.delete(id);
+			            localStorage.setItem(`timer_${id}`, 0); // вместо удаления, чтобы кнопка осталась
+			
+			            const buttonId = id.split('-')[1];
+			            window.open(`https://backend.yataxi.kz/admin/list-tickets/${buttonId}`, '_blank');
+			
+			            setButtons(prev => ({ ...prev })); // перерендер
+			        }
+			    }, 1000);
+			
+			    timersRef.current.set(id, interval);
+			};
+
 
             const promptForCustomTime = (id) => {
                 const userInput = prompt('Введите время в минутах:');
@@ -1043,44 +1053,46 @@
                 showNotification('Текст скопирован!');
             };
 
-            const renderButton = (btn, column) => {
-                const id = btn.id;
-                const endTime = localStorage.getItem(`timer_${id}`);
-                const hasTimer = column === 'deferred' && endTime && (parseInt(endTime) > Date.now());
-                const showControls = column === 'deferred' && !hasTimer;
-                const isSelected = selectedButtons.some(s => s.id === id);
-                return (
-                    <button
-                        key={id}
-                        id={id}
-                        className={`${column} ${isSelected ? 'selected' : ''}`}
-                        draggable
-                        onDragStart={(e) => dragStart(e, btn)}
-                        onDragEnd={dragEnd}
-                        onClick={(e) => handleButtonClick(e, btn, column)}
-                        onDoubleClick={() => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank')}
-                        onContextMenu={(e) => { e.preventDefault(); deleteButton(btn); }}
-                    >
-                        Кнопка {btn.num}
-                        {column === 'deferred' && (
-                            <div className="timer-container">
-                                {hasTimer && (
-                                    <>
-                                        <div className="timer" id={`timer-${id}`}></div>
-                                        <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                        {showControls && (
-                            <>
-                                <button className="timer-control" onClick={() => restartTimer(id)}>↻</button>
-                                <button className="timer-control" onClick={() => completeTask(id, column)}>✔</button>
-                            </>
-                        )}
-                    </button>
-                );
-            };
+			const renderButton = (btn, column) => {
+			    const id = btn.id;
+			    const endTime = localStorage.getItem(`timer_${id}`);
+			    const hasTimer = column === 'deferred' && endTime && parseInt(endTime) > Date.now();
+			    const showControls = column === 'deferred' && (!endTime || parseInt(endTime) <= Date.now());
+			    const isSelected = selectedButtons.some(s => s.id === id);
+			
+			    return (
+			        <button
+			            key={id}
+			            id={id}
+			            className={`${column} ${isSelected ? 'selected' : ''}`}
+			            draggable
+			            onDragStart={(e) => dragStart(e, btn)}
+			            onDragEnd={dragEnd}
+			            onClick={(e) => handleButtonClick(e, btn, column)}
+			            onDoubleClick={() => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank')}
+			            onContextMenu={(e) => { e.preventDefault(); deleteButton(btn); }}
+			        >
+			            Кнопка {btn.num}
+			            {column === 'deferred' && (
+			                <div className="timer-container">
+			                    {hasTimer && (
+			                        <>
+			                            <div className="timer" id={`timer-${id}`}></div>
+			                            <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
+			                        </>
+			                    )}
+			                    {showControls && (
+			                        <>
+			                            <button className="timer-control" onClick={() => restartTimer(id)}>↻</button>
+			                            <button className="timer-control" onClick={() => completeTask(id, column)}>✔</button>
+			                        </>
+			                    )}
+			                </div>
+			            )}
+			        </button>
+			    );
+			};
+
 
             if (!loggedIn) {
                 return (
