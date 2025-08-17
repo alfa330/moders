@@ -597,29 +597,52 @@
             gap: 8px;
         }
 
-        .edit-timer-form {
+        .timer-input-container {
             display: flex;
+            justify-content: center;
             align-items: center;
-            gap: 8px;
-            margin: 5px 0;
+            gap: 5px;
+            margin-top: 10px;
             padding: 5px;
             background: rgba(255, 255, 255, 0.8);
             border-radius: 8px;
+            box-shadow: var(--shadow-light);
         }
 
-        .edit-timer-form input {
-            width: 100px;
+        .timer-input {
+            width: 40px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
             padding: 5px;
             font-size: 14px;
         }
 
-        .edit-timer-form button {
-            padding: 5px 10px;
-            font-size: 14px;
+        .timer-input-separator {
+            font-size: 16px;
+            font-weight: bold;
         }
 
-        body.dark .edit-timer-form {
-            background: rgba(0, 0, 0, 0.8);
+        .save-time-btn {
+            padding: 5px 10px;
+            font-size: 12px;
+            background-color: #4a2f3b;
+            color: #fff;
+            border-radius: 6px;
+            margin-left: 10px;
+        }
+
+        .save-time-btn:hover {
+            background-color: #6b4e5a;
+        }
+
+        body.dark .timer-input-container {
+            background: rgba(47, 27, 36, 0.9);
+        }
+
+        body.dark .timer-input {
+            background: #fff;
+            color: #000;
         }
     </style>
 </head>
@@ -629,7 +652,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script type="text/babel">
-        const { useState, useEffect, useRef, Fragment } = React;
+        const { useState, useEffect, useRef } = React;
 
         const API_BASE_URL = "https://otp-2-fos4.onrender.com";
 
@@ -655,10 +678,12 @@
             const [isFetchingOperators, setIsFetchingOperators] = useState(false);
             const [isTogglingActive, setIsTogglingActive] = useState(false);
             const [isDividing, setIsDividing] = useState(false);
-	    const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
+            const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
             const [isGeneratingReport, setIsGeneratingReport] = useState(false);
             const [editingTimerId, setEditingTimerId] = useState(null);
-            const [editTime, setEditTime] = useState('');
+            const [hours, setHours] = useState(0);
+            const [minutes, setMinutes] = useState(0);
+            const [seconds, setSeconds] = useState(0);
 
 	    const generateReport = async () => {
                 setIsGeneratingReport(true);
@@ -909,26 +934,28 @@
             };
 
             const startEditingTimer = (id) => {
+                setHours(0);
+                setMinutes(0);
+                setSeconds(0);
                 setEditingTimerId(id);
-                setEditTime('');
             };
 
-            const submitEditTime = (id) => {
-                const parts = editTime.split(':');
-                if (parts.length !== 3) return showNotification('Формат hh:mm:ss!');
-                const h = parseInt(parts[0]) || 0;
-                const m = parseInt(parts[1]) || 0;
-                const s = parseInt(parts[2]) || 0;
-                if (isNaN(h) || isNaN(m) || isNaN(s) || h < 0 || m < 0 || s < 0 || m >= 60 || s >= 60) return showNotification('Некорректное время!');
-                const seconds = h * 3600 + m * 60 + s;
-                if (seconds <= 0) return showNotification('Время должно быть положительным!');
-                if (timersRef.current.has(id)) {
-                    clearInterval(timersRef.current.get(id));
-                    timersRef.current.delete(id);
+            const saveCustomTime = () => {
+                const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                if (totalSeconds <= 0) {
+                    showNotification('Некорректное время!');
+                    return;
                 }
-                startTimer(id, seconds);
+                if (timersRef.current.has(editingTimerId)) {
+                    clearInterval(timersRef.current.get(editingTimerId));
+                    timersRef.current.delete(editingTimerId);
+                }
+                startTimer(editingTimerId, totalSeconds);
                 setEditingTimerId(null);
-                setEditTime('');
+            };
+
+            const cancelEditingTimer = () => {
+                setEditingTimerId(null);
             };
 
             const restartTimer = (id) => {
@@ -1080,50 +1107,68 @@
                 const hasTimer = column === 'deferred' && endTime && (parseInt(endTime) > Date.now());
                 const showControls = column === 'deferred' && !hasTimer;
                 const isSelected = selectedButtons.some(s => s.id === id);
+                const isEditing = column === 'deferred' && editingTimerId === id;
                 return (
-                    <Fragment key={id}>
-                        <button
-                            id={id}
-                            className={`${column} ${isSelected ? 'selected' : ''}`}
-                            draggable
-                            onDragStart={(e) => dragStart(e, btn)}
-                            onDragEnd={dragEnd}
-                            onClick={(e) => handleButtonClick(e, btn, column)}
-                            onDoubleClick={() => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank')}
-                            onContextMenu={(e) => { e.preventDefault(); deleteButton(btn); }}
-                        >
-                            Кнопка {btn.num}
-                            {column === 'deferred' && (
-                                <div className="timer-container">
-                                    {hasTimer && (
-                                        <>
-                                            <div className="timer" id={`timer-${id}`}></div>
-                                            <button className="edit-time-btn" onClick={(e) => { e.stopPropagation(); startEditingTimer(id); }}>🖋️</button>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                            {showControls && (
-                                <>
-                                    <button className="timer-control" onClick={(e) => { e.stopPropagation(); restartTimer(id); }}>↻</button>
-                                    <button className="timer-control" onClick={(e) => { e.stopPropagation(); completeTask(id, column); }}>✔</button>
-                                </>
-                            )}
-                        </button>
-                        {editingTimerId === id && (
-                            <div className="edit-timer-form">
-                                <input 
-                                    type="text" 
-                                    placeholder="hh:mm:ss" 
-                                    value={editTime}
-                                    onChange={(e) => setEditTime(e.target.value)}
-                                    onKeyPress={(e) => { if (e.key === 'Enter') submitEditTime(id); }}
-                                />
-                                <button onClick={() => submitEditTime(id)}>OK</button>
-                                <button onClick={() => setEditingTimerId(null)}>Cancel</button>
+                    <button
+                        key={id}
+                        id={id}
+                        className={`${column} ${isSelected ? 'selected' : ''} ${isEditing ? 'editing' : ''}`}
+                        draggable
+                        onDragStart={(e) => dragStart(e, btn)}
+                        onDragEnd={dragEnd}
+                        onClick={(e) => handleButtonClick(e, btn, column)}
+                        onDoubleClick={() => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank')}
+                        onContextMenu={(e) => { e.preventDefault(); deleteButton(btn); }}
+                    >
+                        Кнопка {btn.num}
+                        {column === 'deferred' && (
+                            <div className="timer-container">
+                                {hasTimer && (
+                                    <>
+                                        <div className="timer" id={`timer-${id}`}></div>
+                                        <button className="edit-time-btn" onClick={() => startEditingTimer(id)}>🖋️</button>
+                                    </>
+                                )}
                             </div>
                         )}
-                    </Fragment>
+                        {showControls && (
+                            <>
+                                <button className="timer-control" onClick={() => restartTimer(id)}>↻</button>
+                                <button className="timer-control" onClick={() => completeTask(id, column)}>✔</button>
+                            </>
+                        )}
+                        {isEditing && (
+                            <div className="timer-input-container">
+                                <input 
+                                    type="number" 
+                                    min="0" 
+                                    value={hours} 
+                                    onChange={(e) => setHours(Math.max(0, parseInt(e.target.value) || 0))} 
+                                    className="timer-input" 
+                                />
+                                <span className="timer-input-separator">:</span>
+                                <input 
+                                    type="number" 
+                                    min="0" 
+                                    max="59" 
+                                    value={minutes} 
+                                    onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))} 
+                                    className="timer-input" 
+                                />
+                                <span className="timer-input-separator">:</span>
+                                <input 
+                                    type="number" 
+                                    min="0" 
+                                    max="59" 
+                                    value={seconds} 
+                                    onChange={(e) => setSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))} 
+                                    className="timer-input" 
+                                />
+                                <button className="save-time-btn" onClick={saveCustomTime}>Сохранить</button>
+                                <button className="save-time-btn" onClick={cancelEditingTimer}>Отмена</button>
+                            </div>
+                        )}
+                    </button>
                 );
             };
 
