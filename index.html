@@ -531,63 +531,6 @@
             font-size: 14px;
         }
 
-        .time-input-container {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            align-items: center;
-        }
-
-        .time-input {
-            width: 60px;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            background: #fff;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        .time-input:focus {
-            outline: 2px solid var(--button-bg);
-            box-shadow: 0 0 8px rgba(248, 184, 198, 0.3);
-        }
-
-        .time-input-submit {
-            padding: 8px 12px;
-            font-size: 14px;
-            background-color: #4a2f3b;
-            color: #fff;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .time-input-submit:hover {
-            background-color: #6b4e5a;
-        }
-
-        .add-deferred-input-container {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            align-items: center;
-        }
-
-        .add-deferred-input {
-            width: 100px;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            background: #fff;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        .add-deferred-input:focus {
-            outline: 2px solid var(--button-bg);
-            box-shadow: 0 0 8px rgba(248, 184, 198, 0.3);
-        }
-
         @media (max-width: 768px) {
             .container { width: 95%; margin: 15px auto; }
             .controls { flex-direction: column; align-items: center; padding: 10px; }
@@ -689,10 +632,6 @@
             const [isDividing, setIsDividing] = useState(false);
 	    const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
             const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-            const [editingTimerId, setEditingTimerId] = useState(null);
-            const [timeInput, setTimeInput] = useState({ hours: '', minutes: '', seconds: '' });
-            const [showAddDeferredInput, setShowAddDeferredInput] = useState(false);
-            const [newDeferredNum, setNewDeferredNum] = useState('');
 
 	    const generateReport = async () => {
                 setIsGeneratingReport(true);
@@ -824,7 +763,7 @@
                     const data = await response.json();
                     if (data.status === 'success') {
                         setUserData(prev => ({ ...prev, isActive: newActive }));
-                        fetchActiveOperators();
+                        fetchActiveOperators(); // Refresh list immediately
                     }
                 } catch (e) {
                     console.error('Error toggling active:', e);
@@ -866,6 +805,7 @@
                     loadedButtons[columnId] = buttonIds.map(id => ({ id, num: id.split('-')[1] }));
                 });
                 setButtons(loadedButtons);
+                // Restore timers for deferred
                 loadedButtons.deferred.forEach(btn => {
                     const endTime = localStorage.getItem(`timer_${btn.id}`);
                     if (endTime) {
@@ -909,26 +849,15 @@
             };
 
             const addSingleDeferredButton = () => {
-                const parsedNum = parseInt(newDeferredNum);
-                if (isNaN(parsedNum) || parsedNum < 1) {
-                    showNotification('Введите корректный номер!');
-                    setShowAddDeferredInput(false);
-                    setNewDeferredNum('');
-                    return;
-                }
+                const num = prompt('Введите номер кнопки для добавления в Отложенные:');
+                const parsedNum = parseInt(num);
+                if (isNaN(parsedNum) || parsedNum < 1) return showNotification('Введите корректный номер!');
                 const id = `button-${parsedNum}`;
-                if (Object.values(buttons).flat().some(b => b.id === id)) {
-                    showNotification('Кнопка уже существует!');
-                    setShowAddDeferredInput(false);
-                    setNewDeferredNum('');
-                    return;
-                }
+                if (Object.values(buttons).flat().some(b => b.id === id)) return showNotification('Кнопка уже существует!');
                 const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
                 setButtons({ ...buttons, deferred: newDeferred });
-                startTimer(id, 900);
+                startTimer(id, 900); // initial 15 min
                 showNotification(`Кнопка ${parsedNum} добавлена!`);
-                setShowAddDeferredInput(false);
-                setNewDeferredNum('');
             };
 
             const startTimer = (id, duration) => {
@@ -938,10 +867,9 @@
                     const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
                     const timerEl = document.getElementById(`timer-${id}`);
                     if (timerEl) {
-                        const hours = Math.floor(timeLeft / 3600);
-                        const minutes = Math.floor((timeLeft % 3600) / 60);
+                        const minutes = Math.floor(timeLeft / 60);
                         const seconds = timeLeft % 60;
-                        timerEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
                     }
                     if (timeLeft <= 0) {
                         clearInterval(interval);
@@ -949,29 +877,22 @@
                         localStorage.removeItem(`timer_${id}`);
                         const buttonId = id.split('-')[1];
                         window.open(`https://backend.yataxi.kz/admin/list-tickets/${buttonId}`, '_blank');
-                        setButtons(prev => ({ ...prev }));
+                        setButtons(prev => ({ ...prev })); // Force re-render
                     }
                 }, 1000);
                 timersRef.current.set(id, interval);
             };
 
-            const setCustomTime = (id) => {
-                const { hours, minutes, seconds } = timeInput;
-                const h = parseInt(hours) || 0;
-                const m = parseInt(minutes) || 0;
-                const s = parseInt(seconds) || 0;
-                const totalSeconds = h * 3600 + m * 60 + s;
-                if (totalSeconds <= 0) {
-                    showNotification('Введите корректное время!');
-                    return;
-                }
+            const promptForCustomTime = (id) => {
+                const userInput = prompt('Введите время в минутах:');
+                const customDuration = parseFloat(userInput);
+                if (isNaN(customDuration) || customDuration <= 0) return showNotification('Некорректное число!');
+                const seconds = Math.floor(customDuration * 60);
                 if (timersRef.current.has(id)) {
                     clearInterval(timersRef.current.get(id));
                     timersRef.current.delete(id);
                 }
-                startTimer(id, totalSeconds);
-                setEditingTimerId(null);
-                setTimeInput({ hours: '', minutes: '', seconds: '' });
+                startTimer(id, seconds);
             };
 
             const restartTimer = (id) => {
@@ -981,7 +902,7 @@
                 const duration = restartCount === 1 ? 1800 : 3600;
                 if (timersRef.current.has(id)) clearInterval(timersRef.current.get(id));
                 startTimer(id, duration);
-                setButtons(prev => ({ ...prev }));
+                setButtons(prev => ({ ...prev })); // Re-render
             };
 
             const completeTask = (id, column) => {
@@ -1120,71 +1041,35 @@
                 const showControls = column === 'deferred' && !hasTimer;
                 const isSelected = selectedButtons.some(s => s.id === id);
                 return (
-                    <div style={{ position: 'relative' }}>
-                        <button
-                            key={id}
-                            id={id}
-                            className={`${column} ${isSelected ? 'selected' : ''}`}
-                            draggable
-                            onDragStart={(e) => dragStart(e, btn)}
-                            onDragEnd={dragEnd}
-                            onClick={(e) => handleButtonClick(e, btn, column)}
-                            onDoubleClick={() => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank')}
-                            onContextMenu={(e) => { e.preventDefault(); deleteButton(btn); }}
-                        >
-                            Кнопка {btn.num}
-                            {column === 'deferred' && (
-                                <div className="timer-container">
-                                    {hasTimer && (
-                                        <>
-                                            <div className="timer" id={`timer-${id}`}></div>
-                                            <button className="edit-time-btn" onClick={() => setEditingTimerId(id)}>🖋️</button>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                            {showControls && (
-                                <>
-                                    <button className="timer-control" onClick={() => restartTimer(id)}>↻</button>
-                                    <button className="timer-control" onClick={() => completeTask(id, column)}>✔</button>
-                                </>
-                            )}
-                        </button>
-                        {editingTimerId === id && (
-                            <div className="time-input-container">
-                                <input
-                                    type="number"
-                                    className="time-input"
-                                    placeholder="HH"
-                                    value={timeInput.hours}
-                                    onChange={(e) => setTimeInput({ ...timeInput, hours: e.target.value })}
-                                    min="0"
-                                    max="23"
-                                />
-                                <span>:</span>
-                                <input
-                                    type="number"
-                                    className="time-input"
-                                    placeholder="MM"
-                                    value={timeInput.minutes}
-                                    onChange={(e) => setTimeInput({ ...timeInput, minutes: e.target.value })}
-                                    min="0"
-                                    max="59"
-                                />
-                                <span>:</span>
-                                <input
-                                    type="number"
-                                    className="time-input"
-                                    placeholder="SS"
-                                    value={timeInput.seconds}
-                                    onChange={(e) => setTimeInput({ ...timeInput, seconds: e.target.value })}
-                                    min="0"
-                                    max="59"
-                                />
-                                <button className="time-input-submit" onClick={() => setCustomTime(id)}>OK</button>
+                    <button
+                        key={id}
+                        id={id}
+                        className={`${column} ${isSelected ? 'selected' : ''}`}
+                        draggable
+                        onDragStart={(e) => dragStart(e, btn)}
+                        onDragEnd={dragEnd}
+                        onClick={(e) => handleButtonClick(e, btn, column)}
+                        onDoubleClick={() => window.open(`https://backend.yataxi.kz/admin/list-tickets/${btn.num}`, '_blank')}
+                        onContextMenu={(e) => { e.preventDefault(); deleteButton(btn); }}
+                    >
+                        Кнопка {btn.num}
+                        {column === 'deferred' && (
+                            <div className="timer-container">
+                                {hasTimer && (
+                                    <>
+                                        <div className="timer" id={`timer-${id}`}></div>
+                                        <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
+                                    </>
+                                )}
                             </div>
                         )}
-                    </div>
+                        {showControls && (
+                            <>
+                                <button className="timer-control" onClick={() => restartTimer(id)}>↻</button>
+                                <button className="timer-control" onClick={() => completeTask(id, column)}>✔</button>
+                            </>
+                        )}
+                    </button>
                 );
             };
 
@@ -1207,33 +1092,33 @@
                     <div className="petals" ref={petalsRef}></div>
                     <button className={`sidebar-toggle ${sidebarOpen ? 'open' : ''}`} onClick={toggleSidebar} aria-label="Открыть меню разделения кнопок">📝</button>
                     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-                        <div className="sidebar-content">
-                            {userData.role === 'operator' && (
-                                <button onClick={() => toggleActive(!userData.isActive)} disabled={isTogglingActive}>
-                                    {isTogglingActive ? <div className="loader"></div> : (userData.isActive ? 'Деактивировать' : 'Активировать')}
-                                </button>
-                            )}
-                            <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
-                            <button onClick={divideButtons} disabled={isDividing || isFetchingOperators}>
-                                {isDividing || isFetchingOperators ? <div className="loader"></div> : 'Поделить'}
-                            </button>
-                            <textarea className="result-textarea" value={result} readOnly />
-                            <button onClick={copyResult}>Скопировать</button>
-                            {userData.role !== 'operator' && (
-                                <>
-                                    <input 
-                                        type="month" 
-                                        value={month} 
-                                        onChange={(e) => setMonth(e.target.value)} 
-                                        placeholder="Месяц YYYY-MM" 
-                                    />
-                                    <button onClick={generateReport} disabled={isGeneratingReport}>
-                                        {isGeneratingReport ? <div className="loader"></div> : 'Отчет'}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
+			    <div className="sidebar-content">
+			        {userData.role === 'operator' && (
+			            <button onClick={() => toggleActive(!userData.isActive)} disabled={isTogglingActive}>
+			                {isTogglingActive ? <div className="loader"></div> : (userData.isActive ? 'Деактивировать' : 'Активировать')}
+			            </button>
+			        )}
+			        <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
+			        <button onClick={divideButtons} disabled={isDividing || isFetchingOperators}>
+			            {isDividing || isFetchingOperators ? <div className="loader"></div> : 'Поделить'}
+			        </button>
+			        <textarea className="result-textarea" value={result} readOnly />
+			        <button onClick={copyResult}>Скопировать</button>
+			        {userData.role !== 'operator' && (
+			            <>
+			                <input 
+			                    type="month" 
+			                    value={month} 
+			                    onChange={(e) => setMonth(e.target.value)} 
+			                    placeholder="Месяц YYYY-MM" 
+			                />
+			                <button onClick={generateReport} disabled={isGeneratingReport}>
+                                            {isGeneratingReport ? <div className="loader"></div> : 'Отчет'}
+                                        </button>
+			            </>
+			        )}
+			    </div>
+			</div>
                     {userData && (
                         <div className="user-info">
                             <span>{userData.name}</span>
@@ -1267,23 +1152,8 @@
                                     </div>
                                     <div className="counter" id={`${column}Count`}>
                                         {buttons[column].length}
-                                        {column === 'deferred' && (
-                                            <button className="add-button" onClick={() => setShowAddDeferredInput(!showAddDeferredInput)}>+</button>
-                                        )}
+                                        {column === 'deferred' && <button className="add-button" onClick={addSingleDeferredButton}>+</button>}
                                     </div>
-                                    {column === 'deferred' && showAddDeferredInput && (
-                                        <div className="add-deferred-input-container">
-                                            <input
-                                                type="number"
-                                                className="add-deferred-input"
-                                                placeholder="Номер кнопки"
-                                                value={newDeferredNum}
-                                                onChange={(e) => setNewDeferredNum(e.target.value)}
-                                                min="1"
-                                            />
-                                            <button className="time-input-submit" onClick={addSingleDeferredButton}>OK</button>
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                         </div>
