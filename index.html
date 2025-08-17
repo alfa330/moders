@@ -596,54 +596,6 @@
             justify-content: center;
             gap: 8px;
         }
-
-        .timer-input-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 5px;
-            margin-top: 10px;
-            padding: 5px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 8px;
-            box-shadow: var(--shadow-light);
-        }
-
-        .timer-input {
-            width: 40px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            padding: 5px;
-            font-size: 14px;
-        }
-
-        .timer-input-separator {
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        .save-time-btn {
-            padding: 5px 10px;
-            font-size: 12px;
-            background-color: #4a2f3b;
-            color: #fff;
-            border-radius: 6px;
-            margin-left: 10px;
-        }
-
-        .save-time-btn:hover {
-            background-color: #6b4e5a;
-        }
-
-        body.dark .timer-input-container {
-            background: rgba(47, 27, 36, 0.9);
-        }
-
-        body.dark .timer-input {
-            background: #fff;
-            color: #000;
-        }
     </style>
 </head>
 <body>
@@ -678,12 +630,8 @@
             const [isFetchingOperators, setIsFetchingOperators] = useState(false);
             const [isTogglingActive, setIsTogglingActive] = useState(false);
             const [isDividing, setIsDividing] = useState(false);
-            const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
+	    const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
             const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-            const [editingTimerId, setEditingTimerId] = useState(null);
-            const [hours, setHours] = useState(0);
-            const [minutes, setMinutes] = useState(0);
-            const [seconds, setSeconds] = useState(0);
 
 	    const generateReport = async () => {
                 setIsGeneratingReport(true);
@@ -933,29 +881,16 @@
                 timersRef.current.set(id, interval);
             };
 
-            const startEditingTimer = (id) => {
-                setHours(0);
-                setMinutes(0);
-                setSeconds(0);
-                setEditingTimerId(id);
-            };
-
-            const saveCustomTime = () => {
-                const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
-                if (totalSeconds <= 0) {
-                    showNotification('Некорректное время!');
-                    return;
+            const promptForCustomTime = (id) => {
+                const userInput = prompt('Введите время в минутах:');
+                const customDuration = parseFloat(userInput);
+                if (isNaN(customDuration) || customDuration <= 0) return showNotification('Некорректное число!');
+                const seconds = Math.floor(customDuration * 60);
+                if (timersRef.current.has(id)) {
+                    clearInterval(timersRef.current.get(id));
+                    timersRef.current.delete(id);
                 }
-                if (timersRef.current.has(editingTimerId)) {
-                    clearInterval(timersRef.current.get(editingTimerId));
-                    timersRef.current.delete(editingTimerId);
-                }
-                startTimer(editingTimerId, totalSeconds);
-                setEditingTimerId(null);
-            };
-
-            const cancelEditingTimer = () => {
-                setEditingTimerId(null);
+                startTimer(id, seconds);
             };
 
             const restartTimer = (id) => {
@@ -1107,12 +1042,11 @@
                 const hasTimer = column === 'deferred' && endTime && (parseInt(endTime) > Date.now());
                 const showControls = column === 'deferred' && !hasTimer;
                 const isSelected = selectedButtons.some(s => s.id === id);
-                const isEditing = column === 'deferred' && editingTimerId === id;
                 return (
                     <button
                         key={id}
                         id={id}
-                        className={`${column} ${isSelected ? 'selected' : ''} ${isEditing ? 'editing' : ''}`}
+                        className={`${column} ${isSelected ? 'selected' : ''}`}
                         draggable
                         onDragStart={(e) => dragStart(e, btn)}
                         onDragEnd={dragEnd}
@@ -1126,7 +1060,7 @@
                                 {hasTimer && (
                                     <>
                                         <div className="timer" id={`timer-${id}`}></div>
-                                        <button className="edit-time-btn" onClick={() => startEditingTimer(id)}>🖋️</button>
+                                        <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
                                     </>
                                 )}
                             </div>
@@ -1136,37 +1070,6 @@
                                 <button className="timer-control" onClick={() => restartTimer(id)}>↻</button>
                                 <button className="timer-control" onClick={() => completeTask(id, column)}>✔</button>
                             </>
-                        )}
-                        {isEditing && (
-                            <div className="timer-input-container">
-                                <input 
-                                    type="number" 
-                                    min="0" 
-                                    value={hours} 
-                                    onChange={(e) => setHours(Math.max(0, parseInt(e.target.value) || 0))} 
-                                    className="timer-input" 
-                                />
-                                <span className="timer-input-separator">:</span>
-                                <input 
-                                    type="number" 
-                                    min="0" 
-                                    max="59" 
-                                    value={minutes} 
-                                    onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))} 
-                                    className="timer-input" 
-                                />
-                                <span className="timer-input-separator">:</span>
-                                <input 
-                                    type="number" 
-                                    min="0" 
-                                    max="59" 
-                                    value={seconds} 
-                                    onChange={(e) => setSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))} 
-                                    className="timer-input" 
-                                />
-                                <button className="save-time-btn" onClick={saveCustomTime}>Сохранить</button>
-                                <button className="save-time-btn" onClick={cancelEditingTimer}>Отмена</button>
-                            </div>
                         )}
                     </button>
                 );
