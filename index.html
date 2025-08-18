@@ -421,32 +421,6 @@
             gap: 15px;
         }
 
-        .online-users-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        .online-users-table th,
-        .online-users-table td {
-            border: 1px solid var(--border-color);
-            padding: 8px;
-            text-align: left;
-        }
-
-        .online-users-table th {
-            background-color: var(--button-bg);
-            color: var(--text-color);
-        }
-
-        body.dark .online-users-table th {
-            color: #fff;
-        }
-
-        .online-users-table td {
-            background-color: var(--column-bg);
-        }
-
         .chekmarkbox {
             display: flex;
         }
@@ -704,33 +678,30 @@
         const { useState, useEffect, useRef } = React;
 
         const API_BASE_URL = "https://otp-2-fos4.onrender.com";
-        const WS_URL = "wss://your-websocket-service.onrender.com/ws"; // Replace with your Render WebSocket service URL
 
         const App = () => {
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
             const [sidebarOpen, setSidebarOpen] = useState(false);
-            const [buttons, setButtons] = useState({
-                pending: JSON.parse(localStorage.getItem('pendingButtons')) || [],
-                completed: JSON.parse(localStorage.getItem('completedButtons')) || [],
-                deferred: JSON.parse(localStorage.getItem('deferredButtons')) || []
-            });
+            const [buttons, setButtons] = useState({ pending: [], completed: [], deferred: [] });
             const [selectedButtons, setSelectedButtons] = useState([]);
+            const [notification, setNotification] = useState({ message: '', show: false });
             const [fromValue, setFromValue] = useState('');
             const [toValue, setToValue] = useState('');
             const [stepValue, setStepValue] = useState('');
-            const [notification, setNotification] = useState({ show: false, message: '' });
+            const [startButton, setStartButton] = useState('');
+            const [result, setResult] = useState('');
+            const timersRef = useRef(new Map());
+            const petalsRef = useRef(null);
+            const [loggedIn, setLoggedIn] = useState(false);
+            const [activeOperators, setActiveOperators] = useState([]);
+            const [userData, setUserData] = useState(null);
             const [loginValue, setLoginValue] = useState('');
             const [passwordValue, setPasswordValue] = useState('');
-            const [loggedIn, setLoggedIn] = useState(false);
-            const [userData, setUserData] = useState(null);
             const [isLoggingIn, setIsLoggingIn] = useState(false);
-            const [isTogglingActive, setIsTogglingActive] = useState(false);
-            const [startButton, setStartButton] = useState('');
-            const [activeOperators, setActiveOperators] = useState([]);
-            const [isDividing, setIsDividing] = useState(false);
             const [isFetchingOperators, setIsFetchingOperators] = useState(false);
-            const [result, setResult] = useState('');
-            const [month, setMonth] = useState('');
+            const [isTogglingActive, setIsTogglingActive] = useState(false);
+            const [isDividing, setIsDividing] = useState(false);
+            const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
             const [isGeneratingReport, setIsGeneratingReport] = useState(false);
             const [showTimerModal, setShowTimerModal] = useState(null);
             const [timerHours, setTimerHours] = useState('');
@@ -738,141 +709,82 @@
             const [timerSeconds, setTimerSeconds] = useState('');
             const [showAddButtonModal, setShowAddButtonModal] = useState(false);
             const [newButtonNumber, setNewButtonNumber] = useState('');
-            const [onlineUsers, setOnlineUsers] = useState([]);
-            const [ws, setWs] = useState(null);
-            const timersRef = useRef(new Map());
-            const petalsRef = useRef(null);
+
+            const generateReport = async () => {
+                setIsGeneratingReport(true);
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/report/monthly?month=${month}`, {
+                        headers: {
+                            'X-API-Key': userData.apiKey,
+                            'X-User-Id': userData.id
+                        }
+                    });
+                    if (!response.ok) throw new Error('Failed');
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'report.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } catch (e) {
+                    showNotification('Error generating report');
+                } finally {
+                    setIsGeneratingReport(false);
+                }
+            };
 
             useEffect(() => {
-                localStorage.setItem('theme', theme);
-                document.body.className = theme;
+                document.body.classList.toggle('dark', theme === 'dark');
             }, [theme]);
 
             useEffect(() => {
-                if (!petalsRef.current) return;
-                const createPetal = () => {
-                    const petal = document.createElement('div');
-                    petal.className = 'petal';
-                    petal.style.left = `${Math.random() * 100}vw`;
-                    petal.style.animationDuration = `${Math.random() * 5 + 5}s`;
-                    petal.style.opacity = Math.random() * 0.5 + 0.2;
-                    petalsRef.current.appendChild(petal);
-                    setTimeout(() => petal.remove(), 10000);
-                };
-                const interval = setInterval(createPetal, 500);
-                return () => clearInterval(interval);
+                createPetals();
+                loadColumnState();
+                requestPermissions();
+                const storedUser = localStorage.getItem('userData');
+                if (storedUser) {
+                    setUserData(JSON.parse(storedUser));
+                    setLoggedIn(true);
+                }
             }, []);
 
             useEffect(() => {
-                if (loggedIn && userData?.id) {
-                    const socket = new WebSocket(WS_URL);
-                    socket.onopen = () => {
-                        socket.send(JSON.stringify({ user_id: userData.id }));
-                    };
-                    socket.onmessage = (event) => {
-                        const msg = JSON.parse(event.data);
-                        if (msg.type === 'online_list') {
-                            setOnlineUsers(msg.data);
-                        }
-                    };
-                    socket.onclose = () => console.log('WebSocket disconnected');
-                    socket.onerror = (err) => console.error('WebSocket error:', err);
-                    setWs(socket);
-
-                    return () => {
-                        socket.close();
-                    };
+                if (loggedIn) {
+                    fetchActiveOperators();
                 }
-            }, [loggedIn, userData]);
-
-            const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
-            const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-
-            const showNotification = (message) => {
-                setNotification({ show: true, message });
-                setTimeout(() => setNotification({ show: false, message: '' }), 3000);
-            };
-
-            const startTimer = (id, duration) => {
-                const endTime = Date.now() + duration * 1000;
-                localStorage.setItem(`timer_${id}`, endTime);
-                const interval = setInterval(() => {
-                    const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-                    const hours = Math.floor(timeLeft / 3600);
-                    const minutes = Math.floor((timeLeft % 3600) / 60);
-                    const seconds = timeLeft % 60;
-                    const timerElement = document.getElementById(`timer-${id}`);
-                    if (timerElement) {
-                        timerElement.textContent = `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                    }
-                    if (timeLeft <= 0) {
-                        clearInterval(interval);
-                        timersRef.current.delete(id);
-                        localStorage.removeItem(`timer_${id}`);
-                        setButtons(prev => ({ ...prev }));
-                    }
-                }, 1000);
-                timersRef.current.set(id, interval);
-            };
+            }, [loggedIn]);
 
             useEffect(() => {
-                Object.keys(buttons).forEach(column => {
-                    buttons[column].forEach(btn => {
-                        const endTime = localStorage.getItem(`timer_${btn.id}`);
-                        if (column === 'deferred' && endTime && parseInt(endTime) > Date.now()) {
-                            startTimer(btn.id, (parseInt(endTime) - Date.now()) / 1000);
+                saveColumnState();
+            }, [buttons]);
+
+            const fetchActiveOperators = async () => {
+                setIsFetchingOperators(true);
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/active_operators`, {
+                        headers: {
+                            'X-API-Key': userData.apiKey,
+                            'X-User-Id': userData.id
                         }
                     });
-                });
-                return () => timersRef.current.forEach((interval, id) => clearInterval(interval));
-            }, []);
-
-            const addButtons = () => {
-                const from = parseInt(fromValue);
-                const to = parseInt(toValue);
-                const step = parseInt(stepValue) || 1;
-                if (isNaN(from) || isNaN(to) || from > to) {
-                    showNotification('Введите корректные значения!');
-                    return;
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        setActiveOperators(data.operators);
+                        if (userData && userData.role === 'operator') {
+                            const isActive = data.operators.some(op => op.name === userData.name);
+                            setUserData(prev => ({ ...prev, isActive }));
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error fetching active operators:', e);
+                } finally {
+                    setIsFetchingOperators(false);
                 }
-                const newButtons = [];
-                for (let i = from; i <= to; i += step) {
-                    newButtons.push({ id: `${i}-${Date.now()}`, num: i });
-                }
-                setButtons(prev => {
-                    const newPending = [...prev.pending, ...newButtons];
-                    localStorage.setItem('pendingButtons', JSON.stringify(newPending));
-                    return { ...prev, pending: newPending };
-                });
-                setFromValue('');
-                setToValue('');
-                setStepValue('');
-                showNotification('Кнопки добавлены!');
-            };
-
-            const addSingleDeferredButton = () => {
-                const num = parseInt(newButtonNumber);
-                if (isNaN(num) || num < 1) {
-                    showNotification('Введите корректный номер!');
-                    return;
-                }
-                const newButton = { id: `${num}-${Date.now()}`, num };
-                setButtons(prev => {
-                    const newDeferred = [...prev.deferred, newButton];
-                    localStorage.setItem('deferredButtons', JSON.stringify(newDeferred));
-                    startTimer(newButton.id, 900);
-                    return { ...prev, deferred: newDeferred };
-                });
-                setNewButtonNumber('');
-                setShowAddButtonModal(false);
-                showNotification('Кнопка добавлена в Отложенные!');
             };
 
             const handleLogin = async () => {
-                if (!loginValue || !passwordValue) {
-                    showNotification('Введите логин и пароль!');
-                    return;
-                }
                 setIsLoggingIn(true);
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/login`, {
@@ -881,16 +793,16 @@
                         body: JSON.stringify({ login: loginValue, password: passwordValue })
                     });
                     const data = await response.json();
-                    if (response.ok) {
-                        setUserData({ id: data.id, name: data.name, role: data.role, isActive: false });
+                    if (data.status === 'success') {
+                        setUserData(data);
                         setLoggedIn(true);
-                        localStorage.setItem('apiKey', data.apiKey);
-                        showNotification('Вход выполнен успешно!');
+                        localStorage.setItem('userData', JSON.stringify(data));
+                        showNotification('Login successful!');
                     } else {
-                        showNotification(data.error || 'Ошибка входа!');
+                        showNotification(data.error || 'Invalid credentials');
                     }
-                } catch (error) {
-                    showNotification('Ошибка сервера!');
+                } catch (e) {
+                    showNotification('Error: ' + e.message);
                 } finally {
                     setIsLoggingIn(false);
                 }
@@ -899,100 +811,180 @@
             const handleLogout = () => {
                 setLoggedIn(false);
                 setUserData(null);
-                setButtons({ pending: [], completed: [], deferred: [] });
-                localStorage.removeItem('apiKey');
-                localStorage.removeItem('pendingButtons');
-                localStorage.removeItem('completedButtons');
-                localStorage.removeItem('deferredButtons');
-                timersRef.current.forEach((interval, id) => {
-                    clearInterval(interval);
-                    localStorage.removeItem(`timer_${id}`);
-                    localStorage.removeItem(`restartCount_${id}`);
-                });
-                timersRef.current.clear();
-                showNotification('Выход выполнен!');
-                if (ws) ws.close();
+                localStorage.removeItem('userData');
+                showNotification('Logged out');
             };
 
-            const fetchActiveOperators = async () => {
-                setIsFetchingOperators(true);
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/active_operators`, {
-                        headers: { 'X-API-Key': localStorage.getItem('apiKey') }
-                    });
-                    const data = await response.json();
-                    if (response.ok) {
-                        setActiveOperators(data.operators);
-                    } else {
-                        showNotification(data.error || 'Ошибка загрузки операторов!');
-                    }
-                } catch (error) {
-                    showNotification('Ошибка сервера!');
-                } finally {
-                    setIsFetchingOperators(false);
-                }
+            const toggleTheme = () => {
+                const newTheme = theme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+                localStorage.setItem('theme', newTheme);
             };
 
-            const toggleActive = async (isActive) => {
+            const toggleSidebar = () => {
+                setSidebarOpen(!sidebarOpen);
+            };
+
+            const toggleActive = async (newActive) => {
                 setIsTogglingActive(true);
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/user/toggle_active`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-API-Key': localStorage.getItem('apiKey'),
+                            'X-API-Key': userData.apiKey,
                             'X-User-Id': userData.id
                         },
-                        body: JSON.stringify({ is_active: isActive })
+                        body: JSON.stringify({ is_active: newActive })
                     });
                     const data = await response.json();
-                    if (response.ok) {
-                        setUserData(prev => ({ ...prev, isActive }));
-                        showNotification(isActive ? 'Статус активен!' : 'Статус деактивирован!');
-                    } else {
-                        showNotification(data.error || 'Ошибка изменения статуса!');
+                    if (data.status === 'success') {
+                        setUserData(prev => ({ ...prev, isActive: newActive }));
+                        fetchActiveOperators();
                     }
-                } catch (error) {
-                    showNotification('Ошибка сервера!');
+                } catch (e) {
+                    console.error('Error toggling active:', e);
                 } finally {
                     setIsTogglingActive(false);
                 }
             };
 
-            const generateReport = async () => {
-                if (!month) {
-                    showNotification('Выберите месяц!');
-                    return;
-                }
-                setIsGeneratingReport(true);
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/report/monthly?supervisor_id=${userData.id}&month=${month}`, {
-                        headers: {
-                            'X-API-Key': localStorage.getItem('apiKey'),
-                            'X-User-Id': userData.id
-                        }
-                    });
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `report_${month}.xlsx`;
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        showNotification('Отчет сгенерирован!');
-                    } else {
-                        const data = await response.json();
-                        showNotification(data.error || 'Ошибка генерации отчета!');
-                    }
-                } catch (error) {
-                    showNotification('Ошибка сервера!');
-                } finally {
-                    setIsGeneratingReport(false);
+            const createPetals = () => {
+                const petalsContainer = petalsRef.current;
+                if (!petalsContainer) return;
+                for (let i = 0; i < 20; i++) {
+                    const petal = document.createElement('div');
+                    petal.classList.add('petal');
+                    petal.style.left = `${Math.random() * 100}vw`;
+                    petal.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                    petal.style.animationDelay = `${Math.random() * 5}s`;
+                    petalsContainer.appendChild(petal);
                 }
             };
 
-            const promptForCustomTime = (id) => setShowTimerModal(id);
+            const requestPermissions = () => {
+                try {
+                    const testWindow = window.open('', '_blank');
+                    if (testWindow) {
+                        testWindow.close();
+                    } else {
+                        showNotification('Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.');
+                    }
+                } catch (e) {
+                    showNotification('Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.');
+                }
+            };
+
+            const loadColumnState = () => {
+                const loadedButtons = {};
+                ['pending', 'completed', 'deferred'].forEach(columnId => {
+                    const buttonIds = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
+                    loadedButtons[columnId] = buttonIds.map(id => ({ id, num: id.split('-')[1] }));
+                });
+                setButtons(loadedButtons);
+                loadedButtons.deferred.forEach(btn => {
+                    const endTime = localStorage.getItem(`timer_${btn.id}`);
+                    if (endTime) {
+                        const remaining = Math.floor((parseInt(endTime) - Date.now()) / 1000);
+                        if (remaining > 0) {
+                            startTimer(btn.id, remaining);
+                        }
+                    }
+                });
+            };
+
+            const saveColumnState = () => {
+                Object.keys(buttons).forEach(columnId => {
+                    const buttonIds = buttons[columnId].map(btn => btn.id);
+                    localStorage.setItem(`${columnId}Buttons`, JSON.stringify(buttonIds));
+                });
+            };
+
+            const showNotification = (message) => {
+                setNotification({ message, show: true });
+                setTimeout(() => setNotification({ message: '', show: false }), 3000);
+            };
+
+            const addButtons = () => {
+                const from = parseInt(fromValue);
+                const to = parseInt(toValue);
+                const step = parseInt(stepValue);
+                if (isNaN(from) || isNaN(to) || isNaN(step) || from < 1 || to < 1 || step < 1 || from > to) {
+                    showNotification('Введите корректные положительные числа!');
+                    return;
+                }
+                const newPending = [...buttons.pending];
+                for (let i = from; i <= to; i += step) {
+                    const id = `button-${i}`;
+                    if (!Object.values(buttons).flat().some(b => b.id === id)) {
+                        newPending.push({ id, num: i });
+                    }
+                }
+                setButtons({ ...buttons, pending: newPending });
+                showNotification('Кнопки добавлены!');
+            };
+
+            const addSingleDeferredButton = () => {
+                const parsedNum = parseInt(newButtonNumber);
+                if (isNaN(parsedNum) || parsedNum < 1) {
+                    showNotification('Введите корректный номер!');
+                    setShowAddButtonModal(false);
+                    return;
+                }
+                const id = `button-${parsedNum}`;
+                if (Object.values(buttons).flat().some(b => b.id === id)) {
+                    showNotification('Кнопка уже существует!');
+                    setShowAddButtonModal(false);
+                    return;
+                }
+                const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
+                setButtons({ ...buttons, deferred: newDeferred });
+                startTimer(id, 900);
+                showNotification(`Кнопка ${parsedNum} добавлена!`);
+                setShowAddButtonModal(false);
+                setNewButtonNumber('');
+            };
+
+            const startTimer = (id, duration) => {
+                const endTime = Date.now() + duration * 1000;
+                localStorage.setItem(`timer_${id}`, endTime);
+                const interval = setInterval(() => {
+                    const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+                    const timerEl = document.getElementById(`timer-${id}`);
+                    if (timerEl) {
+                        const minutes = Math.floor(timeLeft / 60);
+                        const seconds = timeLeft % 60;
+                        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    }
+                    if (timeLeft <= 0) {
+                        clearInterval(interval);
+                        timersRef.current.delete(id);
+                        localStorage.removeItem(`timer_${id}`);
+                        const buttonId = id.split('-')[1];
+                        window.open(`https://backend.yataxi.kz/admin/list-tickets/${buttonId}`, '_blank');
+                        setButtons(prev => ({ ...prev }));
+                    }
+                }, 1000);
+                timersRef.current.set(id, interval);
+            };
+
+            const promptForCustomTime = (id) => {
+                setShowTimerModal(id);
+                const endTime = localStorage.getItem(`timer_${id}`);
+                if (endTime) {
+                    const timeLeft = Math.max(0, Math.floor((parseInt(endTime) - Date.now()) / 1000));
+                    const hours = Math.floor(timeLeft / 3600);
+                    const minutes = Math.floor((timeLeft % 3600) / 60);
+                    const seconds = timeLeft % 60;
+                    setTimerHours(String(hours).padStart(2, '0'));
+                    setTimerMinutes(String(minutes).padStart(2, '0'));
+                    setTimerSeconds(String(seconds).padStart(2, '0'));
+                } else {
+                    setTimerHours('');
+                    setTimerMinutes('');
+                    setTimerSeconds('');
+                }
+            };
 
             const submitCustomTime = (id) => {
                 const hours = parseInt(timerHours) || 0;
@@ -1101,7 +1093,7 @@
                         if (targetColumn === 'deferred') {
                             startTimer(selBtn.id, 900);
                         } else if (selBtn.column === 'deferred') {
-                            if (timersRef.current.has(selBtn.id)) clearInterval(timersRef.current.get(id));
+                            if (timersRef.current.has(selBtn.id)) clearInterval(timersRef.current.get(selBtn.id));
                             timersRef.current.delete(selBtn.id);
                             localStorage.removeItem(`timer_${selBtn.id}`);
                             localStorage.removeItem(`restartCount_${selBtn.id}`);
@@ -1236,29 +1228,6 @@
                                     </button>
                                 </>
                             )}
-                            <div>
-                                <h3>Онлайн пользователи</h3>
-                                {onlineUsers.length === 0 ? (
-                                    <p>Нет пользователей онлайн</p>
-                                ) : (
-                                    <table className="online-users-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Имя</th>
-                                                <th>Онлайн с</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {onlineUsers.map(user => (
-                                                <tr key={user.id}>
-                                                    <td>{user.name}</td>
-                                                    <td>{new Date(user.since).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </div>
                         </div>
                     </div>
                     {userData && (
