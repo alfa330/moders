@@ -1025,15 +1025,44 @@
                 const endTime = Date.now() + duration * 1000;
                 localStorage.setItem(`timer_${id}`, endTime);
                 updateTimerDisplay(id, duration);
+            
                 const interval = setInterval(() => {
                     const remaining = Math.max(0, endTime - Date.now());
                     updateTimerDisplay(id, remaining / 1000);
+            
                     if (remaining <= 0) {
                         clearInterval(interval);
                         timersRef.current.delete(id);
                         localStorage.removeItem(`timer_${id}`);
+            
+                        // === Уведомление при завершении таймера ===
+                        if ("Notification" in window) {
+                            if (Notification.permission === "granted") {
+                                new Notification("⏰ Таймер завершен!", {
+                                    body: "Задача " + id + " закончила отсчет.",
+                                    icon: "https://iili.io/3soEozX.png" // иконка (можно заменить)
+                                });
+                            } else if (Notification.permission !== "denied") {
+                                // Запросить разрешение и потом показать
+                                Notification.requestPermission().then(permission => {
+                                    if (permission === "granted") {
+                                        new Notification("⏰ Таймер завершен!", {
+                                            body: "Задача " + id + " закончила отсчет.",
+                                            icon: "https://iili.io/3soEozX.png"
+                                        });
+                                    } else {
+                                        showNotification("⏰ Таймер завершен!");
+                                    }
+                                });
+                            } else {
+                                showNotification("⏰ Таймер завершен!");
+                            }
+                        } else {
+                            showNotification("⏰ Таймер завершен!");
+                        }
                     }
                 }, 1000);
+            
                 timersRef.current.set(id, interval);
             };
 
