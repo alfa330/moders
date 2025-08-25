@@ -759,6 +759,16 @@
             }, [theme]);
 
             useEffect(() => {
+                const savedApiKey = localStorage.getItem("apiKey");
+                const savedUserData = localStorage.getItem("userData");
+                if (savedApiKey && savedUserData) {
+                    setApiKey(savedApiKey);
+                    setUserData(JSON.parse(savedUserData));
+                    setLoggedIn(true);
+                }
+            }, []);
+            
+            useEffect(() => {
                 const loadButtons = () => {
                     const saved = localStorage.getItem('buttons');
                     if (saved) {
@@ -828,6 +838,8 @@
                         setLoggedIn(true);
                         showNotification('Вход успешен!');
                         fetchUserProfile(data.id);
+                        localStorage.setItem("apiKey", data.apiKey);
+                        localStorage.setItem("userData", JSON.stringify(user));
                     } else {
                         showNotification(data.error || 'Ошибка входа');
                     }
@@ -855,6 +867,8 @@
                 setLoggedIn(false);
                 setUserData(null);
                 setApiKey('');
+                localStorage.removeItem("apiKey");
+                localStorage.removeItem("userData");
                 showNotification('Вы вышли из аккаунта');
             };
 
