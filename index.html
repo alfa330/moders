@@ -1054,7 +1054,7 @@
                         if ("Notification" in window) {
                             if (Notification.permission === "granted") {
                                 new Notification("⏰ Таймер завершен!", {
-                                    body: "Задача " + id + " закончила отсчет.",
+                                    body: "Задача " + id.split("-")[1] + " закончила отсчет.",
                                     icon: "https://iili.io/3soEozX.png" // иконка (можно заменить)
                                 });
                             } else if (Notification.permission !== "denied") {
@@ -1062,7 +1062,7 @@
                                 Notification.requestPermission().then(permission => {
                                     if (permission === "granted") {
                                         new Notification("⏰ Таймер завершен!", {
-                                            body: "Задача " + id + " закончила отсчет.",
+                                            body: "Задача " + id.split("-")[1] + " закончила отсчет.",
                                             icon: "https://iili.io/3soEozX.png"
                                         });
                                     } else {
