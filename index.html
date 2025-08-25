@@ -945,8 +945,8 @@
 
             const fetchActivityLogs = async () => {
                 try {
-                    const today = new Date().toISOString().split('T')[0];
-                    console.log(new Date().toISOString());
+                    const today = today.toLocaleDateString('en-CA');
+                    console.log(today);
                     const res = await fetch(`${API_BASE_URL}/api/user/activity_logs?date=${today}`, {
                         headers: { 
                             'X-API-Key': apiKey,
