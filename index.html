@@ -470,6 +470,34 @@
             box-shadow: var(--shadow-light);
         }
 
+        .activity-log {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            box-shadow: var(--shadow-light);
+        }
+
+        .activity-log h3 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .activity-log ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .activity-log li {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .activity-log li:last-child {
+            border-bottom: none;
+        }
+
         .login-container {
             position: absolute;
             top: 50%;
@@ -683,169 +711,179 @@
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
             const [sidebarOpen, setSidebarOpen] = useState(false);
             const [buttons, setButtons] = useState({ pending: [], completed: [], deferred: [] });
-            const [selectedButtons, setSelectedButtons] = useState([]);
-            const [notification, setNotification] = useState({ message: '', show: false });
+            const [notification, setNotification] = useState({ show: false, message: '' });
             const [fromValue, setFromValue] = useState('');
             const [toValue, setToValue] = useState('');
-            const [stepValue, setStepValue] = useState('');
-            const [startButton, setStartButton] = useState('');
-            const [result, setResult] = useState('');
-            const timersRef = useRef(new Map());
-            const petalsRef = useRef(null);
-            const [loggedIn, setLoggedIn] = useState(false);
-            const [activeOperators, setActiveOperators] = useState([]);
-            const [userData, setUserData] = useState(null);
-            const [loginValue, setLoginValue] = useState('');
-            const [passwordValue, setPasswordValue] = useState('');
-            const [isLoggingIn, setIsLoggingIn] = useState(false);
-            const [isFetchingOperators, setIsFetchingOperators] = useState(false);
-            const [isTogglingActive, setIsTogglingActive] = useState(false);
-            const [isDividing, setIsDividing] = useState(false);
-            const [month, setMonth] = useState(new Date().toISOString().slice(0,7));
-            const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+            const [stepValue, setStepValue] = useState(1);
+            const [selectedButtons, setSelectedButtons] = useState([]);
             const [showTimerModal, setShowTimerModal] = useState(null);
             const [timerHours, setTimerHours] = useState('');
             const [timerMinutes, setTimerMinutes] = useState('');
             const [timerSeconds, setTimerSeconds] = useState('');
             const [showAddButtonModal, setShowAddButtonModal] = useState(false);
             const [newButtonNumber, setNewButtonNumber] = useState('');
+            const [startButton, setStartButton] = useState('');
+            const [activeOperators, setActiveOperators] = useState([]);
+            const [result, setResult] = useState('');
+            const [isDividing, setIsDividing] = useState(false);
+            const [isFetchingOperators, setIsFetchingOperators] = useState(false);
+            const [month, setMonth] = useState('');
+            const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+            const [loggedIn, setLoggedIn] = useState(false);
+            const [loginValue, setLoginValue] = useState('');
+            const [passwordValue, setPasswordValue] = useState('');
+            const [isLoggingIn, setIsLoggingIn] = useState(false);
+            const [userData, setUserData] = useState(null);
+            const [isTogglingActive, setIsTogglingActive] = useState(false);
+            const [activities, setActivities] = useState([]); // New state for activity logs
+            const [isFetchingActivities, setIsFetchingActivities] = useState(false); // New state for loading activities
 
-            const generateReport = async () => {
-                setIsGeneratingReport(true);
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/report/monthly?month=${month}`, {
-                        headers: {
-                            'X-API-Key': userData.apiKey,
-                            'X-User-Id': userData.id
-                        }
-                    });
-                    if (!response.ok) throw new Error('Failed');
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'report.xlsx';
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                } catch (e) {
-                    showNotification('Error generating report');
-                } finally {
-                    setIsGeneratingReport(false);
-                }
-            };
+            const timersRef = useRef(new Map());
+            const petalsRef = useRef(null);
 
             useEffect(() => {
                 document.body.classList.toggle('dark', theme === 'dark');
+                localStorage.setItem('theme', theme);
             }, [theme]);
 
             useEffect(() => {
                 createPetals();
-                loadColumnState();
-                requestPermissions();
-                const storedUser = localStorage.getItem('userData');
-                if (storedUser) {
-                    setUserData(JSON.parse(storedUser));
-                    setLoggedIn(true);
-                }
+                loadButtonsFromLocalStorage();
+                checkLoginStatus();
             }, []);
 
             useEffect(() => {
-                if (loggedIn) {
-                    fetchActiveOperators();
+                if (userData && userData.role === 'operator') {
+                    fetchActivities(); // Automatically load activities for operators on login
                 }
-            }, [loggedIn]);
+            }, [userData]);
 
-            useEffect(() => {
-                saveColumnState();
-            }, [buttons]);
-
-            const fetchActiveOperators = async () => {
-                setIsFetchingOperators(true);
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/active_operators`, {
-                        headers: {
-                            'X-API-Key': userData.apiKey,
-                            'X-User-Id': userData.id
-                        }
-                    });
-                    const data = await response.json();
-                    if (data.status === 'success') {
-                        setActiveOperators(data.operators);
-                        if (userData && userData.role === 'operator') {
-                            const isActive = data.operators.some(op => op.name === userData.name);
-                            setUserData(prev => ({ ...prev, isActive }));
-                        }
-                    }
-                } catch (e) {
-                    console.error('Error fetching active operators:', e);
-                } finally {
-                    setIsFetchingOperators(false);
+            const checkLoginStatus = () => {
+                const apiKey = localStorage.getItem('apiKey');
+                const userId = localStorage.getItem('userId');
+                if (apiKey && userId) {
+                    setLoggedIn(true);
+                    setUserData({ id: userId, ...JSON.parse(localStorage.getItem('userData') || '{}') });
                 }
             };
 
             const handleLogin = async () => {
                 setIsLoggingIn(true);
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/login`, {
+                    const res = await fetch(`${API_BASE_URL}/api/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ login: loginValue, password: passwordValue })
                     });
-                    const data = await response.json();
+                    const data = await res.json();
                     if (data.status === 'success') {
-                        setUserData(data);
+                        localStorage.setItem('apiKey', data.apiKey);
+                        localStorage.setItem('userId', data.id);
+                        localStorage.setItem('userData', JSON.stringify({
+                            name: data.name,
+                            role: data.role,
+                            isActive: false // Initial state, will be updated if needed
+                        }));
                         setLoggedIn(true);
-                        localStorage.setItem('userData', JSON.stringify(data));
-                        showNotification('Login successful!');
+                        setUserData({
+                            name: data.name,
+                            role: data.role,
+                            isActive: false
+                        });
+                        showNotification('Вход выполнен успешно!');
                     } else {
-                        showNotification(data.error || 'Invalid credentials');
+                        showNotification(data.error || 'Ошибка входа');
                     }
                 } catch (e) {
-                    showNotification('Error: ' + e.message);
+                    showNotification('Ошибка соединения');
                 } finally {
                     setIsLoggingIn(false);
                 }
             };
 
             const handleLogout = () => {
+                localStorage.clear();
                 setLoggedIn(false);
                 setUserData(null);
-                localStorage.removeItem('userData');
-                showNotification('Logged out');
-            };
-
-            const toggleTheme = () => {
-                const newTheme = theme === 'dark' ? 'light' : 'dark';
-                setTheme(newTheme);
-                localStorage.setItem('theme', newTheme);
-            };
-
-            const toggleSidebar = () => {
-                setSidebarOpen(!sidebarOpen);
+                setButtons({ pending: [], completed: [], deferred: [] });
+                showNotification('Вы вышли из аккаунта');
             };
 
             const toggleActive = async (newActive) => {
                 setIsTogglingActive(true);
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/user/toggle_active`, {
+                    const res = await fetch(`${API_BASE_URL}/api/user/toggle_active`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-API-Key': userData.apiKey,
-                            'X-User-Id': userData.id
+                            'X-API-Key': localStorage.getItem('apiKey'),
+                            'X-User-Id': localStorage.getItem('userId')
                         },
                         body: JSON.stringify({ is_active: newActive })
                     });
-                    const data = await response.json();
-                    if (data.status === 'success') {
+                    const data = await res.json();
+                    if (data.status === 'success' || data.status === 'unchanged') {
                         setUserData(prev => ({ ...prev, isActive: newActive }));
-                        fetchActiveOperators();
+                        showNotification(`Статус изменен на ${newActive ? 'активен' : 'неактивен'}`);
+                        fetchActivities(); // Reload activities after toggle
+                    } else {
+                        showNotification(data.error || 'Ошибка изменения статуса');
                     }
                 } catch (e) {
-                    console.error('Error toggling active:', e);
+                    showNotification('Ошибка соединения');
                 } finally {
                     setIsTogglingActive(false);
+                }
+            };
+
+            const fetchActiveOperators = async () => {
+                setIsFetchingOperators(true);
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/active_operators`, {
+                        headers: {
+                            'X-API-Key': localStorage.getItem('apiKey')
+                        }
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        setActiveOperators(data.operators);
+                    } else {
+                        showNotification(data.error || 'Ошибка загрузки операторов');
+                    }
+                } catch (e) {
+                    showNotification('Ошибка соединения');
+                } finally {
+                    setIsFetchingOperators(false);
+                }
+            };
+
+            const generateReport = async () => {
+                setIsGeneratingReport(true);
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/report/monthly?month=${month}`, {
+                        headers: {
+                            'X-API-Key': localStorage.getItem('apiKey'),
+                            'X-User-Id': localStorage.getItem('userId')
+                        }
+                    });
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `monthly_report_${month}.xlsx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        showNotification('Отчет сгенерирован!');
+                    } else {
+                        const data = await res.json();
+                        showNotification(data.error || 'Ошибка генерации отчета');
+                    }
+                } catch (e) {
+                    showNotification('Ошибка соединения');
+                } finally {
+                    setIsGeneratingReport(false);
                 }
             };
 
@@ -854,115 +892,94 @@
                 if (!petalsContainer) return;
                 for (let i = 0; i < 20; i++) {
                     const petal = document.createElement('div');
-                    petal.classList.add('petal');
+                    petal.className = 'petal';
                     petal.style.left = `${Math.random() * 100}vw`;
-                    petal.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                    petal.style.animationDuration = `${Math.random() * 10 + 5}s`;
                     petal.style.animationDelay = `${Math.random() * 5}s`;
                     petalsContainer.appendChild(petal);
                 }
             };
 
-            const requestPermissions = () => {
-                try {
-                    const testWindow = window.open('', '_blank');
-                    if (testWindow) {
-                        testWindow.close();
-                    } else {
-                        showNotification('Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.');
-                    }
-                } catch (e) {
-                    showNotification('Всплывающие окна заблокированы. Пожалуйста, разрешите их в настройках браузера.');
+            const toggleTheme = () => {
+                setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+            };
+
+            const toggleSidebar = () => {
+                setSidebarOpen(prev => !prev);
+            };
+
+            const loadButtonsFromLocalStorage = () => {
+                const savedButtons = localStorage.getItem('buttons');
+                if (savedButtons) {
+                    setButtons(JSON.parse(savedButtons));
                 }
-            };
-
-            const loadColumnState = () => {
-                const loadedButtons = {};
-                ['pending', 'completed', 'deferred'].forEach(columnId => {
-                    const buttonIds = JSON.parse(localStorage.getItem(`${columnId}Buttons`) || '[]');
-                    loadedButtons[columnId] = buttonIds.map(id => ({ id, num: id.split('-')[1] }));
-                });
-                setButtons(loadedButtons);
-                loadedButtons.deferred.forEach(btn => {
-                    const endTime = localStorage.getItem(`timer_${btn.id}`);
-                    if (endTime) {
-                        const remaining = Math.floor((parseInt(endTime) - Date.now()) / 1000);
-                        if (remaining > 0) {
-                            startTimer(btn.id, remaining);
-                        }
+                timersRef.current.forEach((interval, id) => clearInterval(interval));
+                timersRef.current.clear();
+                const savedTimers = Object.keys(localStorage).filter(key => key.startsWith('timer_'));
+                savedTimers.forEach(key => {
+                    const id = key.replace('timer_', '');
+                    const endTime = parseInt(localStorage.getItem(key));
+                    if (endTime > Date.now()) {
+                        startTimer(id, (endTime - Date.now()) / 1000, false);
                     }
                 });
             };
 
-            const saveColumnState = () => {
-                Object.keys(buttons).forEach(columnId => {
-                    const buttonIds = buttons[columnId].map(btn => btn.id);
-                    localStorage.setItem(`${columnId}Buttons`, JSON.stringify(buttonIds));
-                });
+            const saveButtonsToLocalStorage = () => {
+                localStorage.setItem('buttons', JSON.stringify(buttons));
             };
+
+            useEffect(() => {
+                saveButtonsToLocalStorage();
+            }, [buttons]);
 
             const showNotification = (message) => {
-                setNotification({ message, show: true });
-                setTimeout(() => setNotification({ message: '', show: false }), 3000);
+                setNotification({ show: true, message });
+                setTimeout(() => setNotification({ show: false, message: '' }), 3000);
             };
 
             const addButtons = () => {
                 const from = parseInt(fromValue);
                 const to = parseInt(toValue);
-                const step = parseInt(stepValue);
-                if (isNaN(from) || isNaN(to) || isNaN(step) || from < 1 || to < 1 || step < 1 || from > to) {
-                    showNotification('Введите корректные положительные числа!');
-                    return;
-                }
-                const newPending = [...buttons.pending];
+                const step = parseInt(stepValue) || 1;
+                if (isNaN(from) || isNaN(to)) return showNotification('Введите корректные числа!');
+                const newBtns = [];
                 for (let i = from; i <= to; i += step) {
-                    const id = `button-${i}`;
-                    if (!Object.values(buttons).flat().some(b => b.id === id)) {
-                        newPending.push({ id, num: i });
-                    }
+                    const id = `btn-${i}-${Date.now()}`;
+                    newBtns.push({ id, num: i });
                 }
-                setButtons({ ...buttons, pending: newPending });
+                setButtons(prev => ({ ...prev, pending: [...prev.pending, ...newBtns] }));
                 showNotification('Кнопки добавлены!');
+                setFromValue('');
+                setToValue('');
             };
 
             const addSingleDeferredButton = () => {
-                const parsedNum = parseInt(newButtonNumber);
-                if (isNaN(parsedNum) || parsedNum < 1) {
-                    showNotification('Введите корректный номер!');
-                    setShowAddButtonModal(false);
-                    return;
-                }
-                const id = `button-${parsedNum}`;
-                if (Object.values(buttons).flat().some(b => b.id === id)) {
-                    showNotification('Кнопка уже существует!');
-                    setShowAddButtonModal(false);
-                    return;
-                }
-                const newDeferred = [...buttons.deferred, { id, num: parsedNum }];
-                setButtons({ ...buttons, deferred: newDeferred });
-                startTimer(id, 900);
-                showNotification(`Кнопка ${parsedNum} добавлена!`);
+                const num = parseInt(newButtonNumber);
+                if (isNaN(num) || num < 1) return showNotification('Введите корректный номер!');
+                const id = `btn-${num}-${Date.now()}`;
+                setButtons(prev => ({ ...prev, deferred: [...prev.deferred, { id, num }] }));
+                showNotification('Кнопка добавлена в Отложенные!');
                 setShowAddButtonModal(false);
                 setNewButtonNumber('');
             };
 
-            const startTimer = (id, duration) => {
-                const endTime = Date.now() + duration * 1000;
-                localStorage.setItem(`timer_${id}`, endTime);
+            const startTimer = (id, durationSeconds = 900, save = true) => {
+                const endTime = Date.now() + durationSeconds * 1000;
+                if (save) localStorage.setItem(`timer_${id}`, endTime);
                 const interval = setInterval(() => {
-                    const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-                    const timerEl = document.getElementById(`timer-${id}`);
-                    if (timerEl) {
-                        const minutes = Math.floor(timeLeft / 60);
-                        const seconds = timeLeft % 60;
-                        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    const remaining = Math.max(0, (endTime - Date.now()) / 1000);
+                    const hours = Math.floor(remaining / 3600);
+                    const minutes = Math.floor((remaining % 3600) / 60);
+                    const seconds = Math.floor(remaining % 60);
+                    const timerElement = document.getElementById(`timer-${id}`);
+                    if (timerElement) {
+                        timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                     }
-                    if (timeLeft <= 0) {
+                    if (remaining <= 0) {
                         clearInterval(interval);
                         timersRef.current.delete(id);
                         localStorage.removeItem(`timer_${id}`);
-                        const buttonId = id.split('-')[1];
-                        window.open(`https://backend.yataxi.kz/admin/list-tickets/${buttonId}`, '_blank');
-                        setButtons(prev => ({ ...prev }));
                     }
                 }, 1000);
                 timersRef.current.set(id, interval);
@@ -970,20 +987,6 @@
 
             const promptForCustomTime = (id) => {
                 setShowTimerModal(id);
-                const endTime = localStorage.getItem(`timer_${id}`);
-                if (endTime) {
-                    const timeLeft = Math.max(0, Math.floor((parseInt(endTime) - Date.now()) / 1000));
-                    const hours = Math.floor(timeLeft / 3600);
-                    const minutes = Math.floor((timeLeft % 3600) / 60);
-                    const seconds = timeLeft % 60;
-                    setTimerHours(String(hours).padStart(2, '0'));
-                    setTimerMinutes(String(minutes).padStart(2, '0'));
-                    setTimerSeconds(String(seconds).padStart(2, '0'));
-                } else {
-                    setTimerHours('');
-                    setTimerMinutes('');
-                    setTimerSeconds('');
-                }
             };
 
             const submitCustomTime = (id) => {
@@ -1145,6 +1148,28 @@
                 showNotification('Текст скопирован!');
             };
 
+            const fetchActivities = async () => {
+                setIsFetchingActivities(true);
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/activity_logs/current_day`, {
+                        headers: {
+                            'X-API-Key': localStorage.getItem('apiKey'),
+                            'X-User-Id': localStorage.getItem('userId')
+                        }
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        setActivities(data.activities || []);
+                    } else {
+                        showNotification(data.error || 'Ошибка загрузки логов активности');
+                    }
+                } catch (e) {
+                    showNotification('Ошибка соединения');
+                } finally {
+                    setIsFetchingActivities(false);
+                }
+            };
+
             const renderButton = (btn, column) => {
                 const id = btn.id;
                 const endTime = localStorage.getItem(`timer_${id}`);
@@ -1205,9 +1230,28 @@
                     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
                         <div className="sidebar-content">
                             {userData.role === 'operator' && (
-                                <button onClick={() => toggleActive(!userData.isActive)} disabled={isTogglingActive}>
-                                    {isTogglingActive ? <div className="loader"></div> : (userData.isActive ? 'Деактивировать' : 'Активировать')}
-                                </button>
+                                <>
+                                    <button onClick={() => toggleActive(!userData.isActive)} disabled={isTogglingActive}>
+                                        {isTogglingActive ? <div className="loader"></div> : (userData.isActive ? 'Деактивировать' : 'Активировать')}
+                                    </button>
+                                    <div className="activity-log">
+                                        <h3>Активность сегодня</h3>
+                                        <button onClick={fetchActivities} disabled={isFetchingActivities}>
+                                            {isFetchingActivities ? <div className="loader"></div> : 'Обновить'}
+                                        </button>
+                                        <ul>
+                                            {activities.length > 0 ? (
+                                                activities.map((act, index) => (
+                                                    <li key={index}>
+                                                        {act.start}: {act.status} ({act.duration})
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li>Нет записей за сегодня</li>
+                                            )}
+                                        </ul>
+                                    </div>
+                                </>
                             )}
                             <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
                             <button onClick={divideButtons} disabled={isDividing || isFetchingOperators}>
