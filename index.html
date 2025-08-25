@@ -707,6 +707,17 @@
             background: var(--button-bg);
             color: white;
         }
+
+        .date-selector {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .date-selector input {
+            width: 150px;
+        }
     </style>
 </head>
 <body>
@@ -749,9 +760,10 @@
             const [isTogglingActive, setIsTogglingActive] = useState(false);
             const [month, setMonth] = useState('');
             const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-            const petalsRef = useRef(null);
             const [currentTab, setCurrentTab] = useState('tasks');
             const [activityLogs, setActivityLogs] = useState([]);
+            const [historyDate, setHistoryDate] = useState(new Date().toISOString().split('T')[0]);
+            const petalsRef = useRef(null);
 
             useEffect(() => {
                 document.body.className = theme === 'dark' ? 'dark' : '';
@@ -930,10 +942,9 @@
                 setIsGeneratingReport(false);
             };
 
-            const fetchActivityLogs = async () => {
+            const fetchActivityLogs = async (date) => {
                 try {
-                    const today = new Date().toISOString().split('T')[0];
-                    const res = await fetch(`${API_BASE_URL}/api/user/activity_logs?date=${today}`, {
+                    const res = await fetch(`${API_BASE_URL}/api/user/activity_logs?date=${date}`, {
                         headers: { 
                             'X-API-Key': apiKey,
                             'X-User-Id': userData.id
@@ -951,10 +962,12 @@
             };
 
             useEffect(() => {
-                if (currentTab === 'activity' && userData.role === 'operator') {
-                    fetchActivityLogs();
+                if (currentTab === 'history' && userData?.role === 'operator') {
+                    fetchActivityLogs(historyDate);
+                } else if (currentTab === 'activity' && userData?.role === 'operator') {
+                    fetchActivityLogs(new Date().toISOString().split('T')[0]);
                 }
-            }, [currentTab]);
+            }, [currentTab, historyDate, userData]);
 
             const formatDuration = (ms) => {
                 if (ms <= 0) return '0s';
@@ -976,6 +989,7 @@
                     computed.push({
                         time: changeTime.toLocaleTimeString(),
                         status: log.is_active ? 'Active' : 'Inactive',
+                        status_type: log.status_type,
                         duration: formatDuration(duration)
                     });
                 }
@@ -1260,6 +1274,7 @@
                                     <tr>
                                         <th>Время</th>
                                         <th>Статус</th>
+                                        <th>Тип статуса</th>
                                         <th>Длительность</th>
                                     </tr>
                                 </thead>
@@ -1268,6 +1283,7 @@
                                         <tr key={index}>
                                             <td>{entry.time}</td>
                                             <td>{entry.status}</td>
+                                            <td>{entry.status_type}</td>
                                             <td>{entry.duration}</td>
                                         </tr>
                                     ))}
@@ -1275,6 +1291,46 @@
                             </table>
                         ) : (
                             <p>Нет записей за сегодня</p>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderHistoryTab = () => {
+                const computedActivity = computeActivity();
+                return (
+                    <div className="activity-log">
+                        <h2>История активности</h2>
+                        <div className="date-selector">
+                            <input
+                                type="date"
+                                value={historyDate}
+                                onChange={(e) => setHistoryDate(e.target.value)}
+                            />
+                        </div>
+                        {computedActivity.length > 0 ? (
+                            <table className="activity-table">
+                                <thead>
+                                    <tr>
+                                        <th>Время</th>
+                                        <th>Статус</th>
+                                        <th>Тип статуса</th>
+                                        <th>Длительность</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {computedActivity.map((entry, index) => (
+                                        <tr key={index}>
+                                            <td>{entry.time}</td>
+                                            <td>{entry.status}</td>
+                                            <td>{entry.status_type}</td>
+                                            <td>{entry.duration}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <p>Нет записей за выбранную дату</p>
                         )}
                     </div>
                 );
@@ -1340,12 +1396,20 @@
                             Задачи
                         </button>
                         {userData.role === 'operator' && (
-                            <button 
-                                className={`tab-button ${currentTab === 'activity' ? 'active' : ''}`} 
-                                onClick={() => setCurrentTab('activity')}
-                            >
-                                Активность
-                            </button>
+                            <>
+                                <button 
+                                    className={`tab-button ${currentTab === 'activity' ? 'active' : ''}`} 
+                                    onClick={() => setCurrentTab('activity')}
+                                >
+                                    Активность
+                                </button>
+                                <button 
+                                    className={`tab-button ${currentTab === 'history' ? 'active' : ''}`} 
+                                    onClick={() => setCurrentTab('history')}
+                                >
+                                    История
+                                </button>
+                            </>
                         )}
                     </div>
                     <div className="container">
@@ -1390,8 +1454,10 @@
                                     <button className="clear-btn" onClick={() => clearColumn('deferred')}>Очистить Отложенные</button>
                                 </div>
                             </>
-                        ) : (
+                        ) : currentTab === 'activity' ? (
                             renderActivityTab()
+                        ) : (
+                            renderHistoryTab()
                         )}
                     </div>
                     <div className="trash-bin" id="trashBin" onDragOver={(e) => { e.preventDefault(); document.getElementById('trashBin').classList.add('dragover'); }} onDrop={dropInTrash} onDragLeave={() => document.getElementById('trashBin').classList.remove('dragover')}>
