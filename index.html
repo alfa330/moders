@@ -833,13 +833,14 @@
                     });
                     const data = await res.json();
                     if (res.ok && data.status === 'success') {
+                        const user = { id: data.id, name: data.name, role: data.role, isActive: false };
                         setApiKey(data.apiKey);
-                        setUserData({ id: data.id, name: data.name, role: data.role, isActive: false });
+                        setUserData(user);
                         setLoggedIn(true);
                         showNotification('Вход успешен!');
                         fetchUserProfile(data.id);
                         localStorage.setItem("apiKey", data.apiKey);
-                        localStorage.setItem("userData", JSON.stringify(user));
+                        localStorage.setItem("userData", JSON.stringify(user)); 
                     } else {
                         showNotification(data.error || 'Ошибка входа');
                     }
