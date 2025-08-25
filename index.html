@@ -1060,6 +1060,7 @@
                         } else {
                             showNotification("⏰ Таймер завершен!");
                         }
+                        setButtons(prev => ({ ...prev }));
                     }
                 }, 1000);
             
