@@ -875,7 +875,7 @@
                 showNotification('Вы вышли из аккаунта');
             };
 
-            const toggleActive = async (newActive) => {
+            const toggleActive = async (newStatus) => {
                 setIsTogglingActive(true);
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/user/toggle_active`, {
@@ -885,12 +885,12 @@
                             'X-API-Key': apiKey,
                             'X-User-Id': userData.id
                         },
-                        body: JSON.stringify({ is_active: newActive })
+                        body: JSON.stringify({ status: newStatus })
                     });
                     const data = await res.json();
                     if (res.ok && (data.status === 'success' || data.status === 'unchanged')) {
-                        setUserData(prev => ({ ...prev, isActive: newActive }));
-                        showNotification(newActive ? 'Активировано!' : 'Деактивировано!');
+                        setUserData(prev => ({ ...prev, status: newStatus }));
+                        showNotification(`Статус: ${newStatus}`);
                     } else {
                         showNotification(data.error || 'Ошибка');
                     }
