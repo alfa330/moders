@@ -761,25 +761,13 @@
             }, [theme]);
 
             useEffect(() => {
-                if (apiKey && userData) {
-                    const updateStatusFromActiveOperators = async () => {
-                        await fetchActiveOperators();
-                        setUserData(prev => ({
-                            ...prev,
-                            isActive: activeOperators.some(op => op.id === prev.id)
-                        }));
-                    };
-                    updateStatusFromActiveOperators();
-                }
-            }, [apiKey, userData]);
-            
-            useEffect(() => {
                 const savedApiKey = localStorage.getItem("apiKey");
                 const savedUserData = localStorage.getItem("userData");
                 if (savedApiKey && savedUserData) {
                     setApiKey(savedApiKey);
                     setUserData(JSON.parse(savedUserData));
                     setLoggedIn(true);
+                    fetchActiveOperators(); 
                 }
             }, []);
             
@@ -855,13 +843,7 @@
                         showNotification('Вход успешен!');
                         localStorage.setItem("apiKey", data.apiKey);
                         localStorage.setItem("userData", JSON.stringify(user));
-            
-                        // Запрос active users и обновление статуса
-                        await fetchActiveOperators();
-                        setUserData(prev => ({
-                            ...prev,
-                            isActive: activeOperators.some(op => op.id === prev.id)
-                        }));
+                        fetchActiveOperators(); 
                     } else {
                         showNotification(data.error || 'Ошибка входа');
                     }
@@ -928,6 +910,10 @@
                     const data = await res.json();
                     if (res.ok && data.status === 'success') {
                         setActiveOperators(data.operators);
+                        const isActive = data.operators.some(op => op.id === userData?.id);
+                        if (userData) {
+                            setUserData(prev => ({ ...prev, isActive }));
+                        }
                     } else {
                         showNotification(data.error || 'Ошибка загрузки операторов');
                     }
