@@ -708,7 +708,7 @@
             color: white;
         }
         select {
-            padding: 10px 40px 10px 14px;
+            padding: 10px 36px 10px 14px; /* место справа под иконку */
             border: 1px solid var(--button-bg);
             border-radius: 12px;
             font-size: 15px;
@@ -720,11 +720,11 @@
             transition: all 0.25s ease;
             appearance: none;
         
-            /* иконка стрелки */
+            /* стрелка */
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="%234a2f3b" d="M7 10l5 5 5-5z"/></svg>');
             background-repeat: no-repeat;
             background-position: right 12px center;
-            background-size: 16px;
+            background-size: 16px 16px; /* фиксируем размер иконки */
             box-shadow: var(--shadow-light);
         }
         
@@ -745,6 +745,7 @@
             border: 1px solid #f4c4ce;
         
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="%23f4c4ce" d="M7 10l5 5 5-5z"/></svg>');
+            background-size: 16px 16px; /* фиксированный размер */
         }
     </style>
 </head>
