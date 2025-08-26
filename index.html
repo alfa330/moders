@@ -767,6 +767,7 @@
                     setApiKey(savedApiKey);
                     setUserData(JSON.parse(savedUserData));
                     setLoggedIn(true);
+                    fetchActiveOperators();
                 }
             }, []);
             
