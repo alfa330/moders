@@ -708,31 +708,43 @@
             color: white;
         }
         select {
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            box-shadow: var(--shadow-light);
+            padding: 10px 40px 10px 14px;
+            border: 1px solid var(--button-bg);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
             background: #fff;
             color: var(--text-color);
             width: 100%;
-            transition: all 0.3s ease;
+            cursor: pointer;
+            transition: all 0.25s ease;
             appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"><path fill="%234a2f3b" d="M7 10l5 5 5-5z"/></svg>');
+        
+            /* иконка стрелки */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="%234a2f3b" d="M7 10l5 5 5-5z"/></svg>');
             background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 12px;
+            background-position: right 12px center;
+            background-size: 16px;
+            box-shadow: var(--shadow-light);
+        }
+        
+        select:hover {
+            border-color: var(--button-bg);
+            box-shadow: 0 0 6px rgba(248, 184, 198, 0.35);
         }
         
         select:focus {
-            outline: 2px solid var(--button-bg);
-            box-shadow: 0 0 8px rgba(248, 184, 198, 0.3);
+            outline: none;
+            border-color: var(--button-bg);
+            box-shadow: 0 0 8px rgba(248, 184, 198, 0.5);
         }
         
         body.dark select {
-            background: rgba(47, 27, 36, 0.9);
+            background: rgba(47, 27, 36, 0.95);
             color: #f4c4ce;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"><path fill="%23f4c4ce" d="M7 10l5 5 5-5z"/></svg>');
+            border: 1px solid #f4c4ce;
+        
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="%23f4c4ce" d="M7 10l5 5 5-5z"/></svg>');
         }
     </style>
 </head>
@@ -1398,7 +1410,6 @@
                                                     setShowStatusSelect(false);
                                                 }}
                                             >
-                                                <option value="">Выберите статус...</option>
                                                 <option value="break">Перерыв</option>
                                                 <option value="training">Тренинг</option>
                                                 <option value="inactive">Деактивировать</option>
