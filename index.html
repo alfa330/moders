@@ -761,6 +761,19 @@
             }, [theme]);
 
             useEffect(() => {
+                if (apiKey && userData) {
+                    const updateStatusFromActiveOperators = async () => {
+                        await fetchActiveOperators();
+                        setUserData(prev => ({
+                            ...prev,
+                            isActive: activeOperators.some(op => op.id === prev.id)
+                        }));
+                    };
+                    updateStatusFromActiveOperators();
+                }
+            }, [apiKey, userData]);
+            
+            useEffect(() => {
                 const savedApiKey = localStorage.getItem("apiKey");
                 const savedUserData = localStorage.getItem("userData");
                 if (savedApiKey && savedUserData) {
@@ -840,9 +853,15 @@
                         setUserData(user);
                         setLoggedIn(true);
                         showNotification('Вход успешен!');
-                        fetchUserProfile(data.id);
                         localStorage.setItem("apiKey", data.apiKey);
-                        localStorage.setItem("userData", JSON.stringify(user)); 
+                        localStorage.setItem("userData", JSON.stringify(user));
+            
+                        // Запрос active users и обновление статуса
+                        await fetchActiveOperators();
+                        setUserData(prev => ({
+                            ...prev,
+                            isActive: activeOperators.some(op => op.id === prev.id)
+                        }));
                     } else {
                         showNotification(data.error || 'Ошибка входа');
                     }
