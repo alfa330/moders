@@ -752,6 +752,8 @@
             const petalsRef = useRef(null);
             const [currentTab, setCurrentTab] = useState('tasks');
             const [activityLogs, setActivityLogs] = useState([]);
+            const [showStatusSelect, setShowStatusSelect] = useState(false);
+            const [selectedStatus, setSelectedStatus] = useState('');
 
             useEffect(() => {
                 document.body.className = theme === 'dark' ? 'dark' : '';
@@ -1351,9 +1353,33 @@
                     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
                         <div className="sidebar-content">
                             {userData.role === 'operator' && (
-                                <button onClick={() => toggleActive(!userData.isActive)} disabled={isTogglingActive}>
-                                    {isTogglingActive ? <div className="loader"></div> : (userData.isActive ? 'Деактивировать' : 'Активировать')}
-                                </button>
+                                <>
+                                {userData.isActive ? (
+                                    showStatusSelect ? (
+                                        <select
+                                            value={selectedStatus}
+                                            onChange={(e) => {
+                                                setSelectedStatus(e.target.value);
+                                                toggleActive(e.target.value); // передаём статус
+                                                setShowStatusSelect(false);
+                                            }}
+                                        >
+                                            <option value="">Выберите статус...</option>
+                                            <option value="break">Перерыв</option>
+                                            <option value="training">Тренинг</option>
+                                            <option value="inactive">Деактивировать</option>
+                                        </select>
+                                    ) : (
+                                        <button onClick={() => setShowStatusSelect(true)} disabled={isTogglingActive}>
+                                            {isTogglingActive ? <div className="loader"></div> : 'Деактивировать'}
+                                        </button>
+                                    )
+                                ) : (
+                                    <button onClick={() => toggleActive('active')} disabled={isTogglingActive}>
+                                        {isTogglingActive ? <div className="loader"></div> : 'Активировать'}
+                                    </button>
+                                )}
+                            </>
                             )}
                             <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
                             <button onClick={divideButtons} disabled={isDividing || isFetchingOperators}>
