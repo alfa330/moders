@@ -767,7 +767,7 @@
                     setApiKey(savedApiKey);
                     setUserData(JSON.parse(savedUserData));
                     setLoggedIn(true);
-                    await fetchActiveOperators(); 
+                    fetchActiveOperators(savedApiKey);
                 }
             }, []);
             
@@ -843,7 +843,7 @@
                         showNotification('Вход успешен!');
                         localStorage.setItem("apiKey", data.apiKey);
                         localStorage.setItem("userData", JSON.stringify(user));
-                        await fetchActiveOperators(); 
+                        fetchActiveOperators(data.apiKey);
                     } else {
                         showNotification(data.error || 'Ошибка входа');
                     }
@@ -901,11 +901,11 @@
                 setIsTogglingActive(false);
             };
 
-            const fetchActiveOperators = async () => {
+            const fetchActiveOperators = async (key) => {
                 setIsFetchingOperators(true);
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/active_operators`, {
-                        headers: { 'X-API-Key': apiKey }
+                        headers: { 'X-API-Key': key }
                     });
                     const data = await res.json();
                     if (res.ok && data.status === 'success') {
@@ -1244,7 +1244,7 @@
 
             const divideButtons = async () => {
                 setIsDividing(true);
-                await fetchActiveOperators();
+                await fetchActiveOperators(apiKey);
                 const start = parseInt(startButton);
                 if (isNaN(start) || start < 1) {
                     showNotification('Введите корректный номер!');
