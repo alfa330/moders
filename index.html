@@ -1026,10 +1026,15 @@
                 }
                 const newBtn = { id: `${Date.now()}-${num}`, num };
                 setButtons(prev => ({ ...prev, deferred: [...prev.deferred, newBtn] }));
+                
+                // Запускаем таймер сразу (15 минут = 900 сек)
+                startTimer(newBtn.id, 900);
+            
                 showNotification('Кнопка добавлена в Отложенные!');
                 setShowAddButtonModal(false);
                 setNewButtonNumber('');
             };
+
 
             const showNotification = (msg) => {
                 setNotification({ show: true, message: msg });
