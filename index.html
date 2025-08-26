@@ -841,6 +841,7 @@
                         setLoggedIn(true);
                         showNotification('Вход успешен!');
                         fetchUserProfile(data.id);
+                        fetchActiveOperators(); // Добавляем вызов для загрузки активных операторов
                         localStorage.setItem("apiKey", data.apiKey);
                         localStorage.setItem("userData", JSON.stringify(user)); 
                     } else {
