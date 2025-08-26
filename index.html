@@ -767,7 +767,6 @@
                     setApiKey(savedApiKey);
                     setUserData(JSON.parse(savedUserData));
                     setLoggedIn(true);
-                    fetchActiveOperators();
                 }
             }, []);
             
@@ -842,7 +841,6 @@
                         setLoggedIn(true);
                         showNotification('Вход успешен!');
                         fetchUserProfile(data.id);
-                        fetchActiveOperators(); // Добавляем вызов для загрузки активных операторов
                         localStorage.setItem("apiKey", data.apiKey);
                         localStorage.setItem("userData", JSON.stringify(user)); 
                     } else {
@@ -911,9 +909,6 @@
                     const data = await res.json();
                     if (res.ok && data.status === 'success') {
                         setActiveOperators(data.operators);
-                        // Проверяем, есть ли текущий пользователь в списке активных операторов
-                        const isUserActive = data.operators.some(op => op.id === userData?.id);
-                        setUserData(prev => ({ ...prev, isActive: isUserActive }));
                     } else {
                         showNotification(data.error || 'Ошибка загрузки операторов');
                     }
