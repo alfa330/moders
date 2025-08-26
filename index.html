@@ -767,7 +767,7 @@
                     setApiKey(savedApiKey);
                     setUserData(JSON.parse(savedUserData));
                     setLoggedIn(true);
-                    fetchActiveOperators(); 
+                    await fetchActiveOperators(); 
                 }
             }, []);
             
@@ -843,7 +843,7 @@
                         showNotification('Вход успешен!');
                         localStorage.setItem("apiKey", data.apiKey);
                         localStorage.setItem("userData", JSON.stringify(user));
-                        fetchActiveOperators(); 
+                        await fetchActiveOperators(); 
                     } else {
                         showNotification(data.error || 'Ошибка входа');
                     }
