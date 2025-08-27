@@ -1442,7 +1442,7 @@
                         <div className="sidebar-content">
                             {userData.role === 'operator' && (
                               <>
-                                {selectedStatus === "inactive" ? (
+                                {!selectedStatus || selectedStatus === "inactive" ? (
                                   <button 
                                     onClick={() => { setSelectedStatus("active"); toggleActive("active"); }} 
                                     disabled={isTogglingActive}
