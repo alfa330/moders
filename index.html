@@ -836,6 +836,8 @@
                     setUserData(JSON.parse(savedUserData));
                     setLoggedIn(true);
                     fetchActiveOperators(savedApiKey);
+                    const parsedUser = JSON.parse(savedUserData);
+                    fetchActivityLogs(savedApiKey, parsedUser.id, true);
                 }
             }, []);
             
