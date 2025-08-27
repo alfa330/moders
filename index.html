@@ -1079,7 +1079,7 @@
                     const duration = nextTime - changeTime;
                     computed.push({
                         time: changeTime.toLocaleTimeString(),
-                        status: log.status,
+                        status: log.is_active,
                         duration: formatDuration(duration)
                     });
                 }
@@ -1406,7 +1406,7 @@
                                     {computedActivity.map((entry, index) => (
                                         <tr key={index}>
                                             <td>{entry.time}</td>
-                                            <td>{entry.status}</td>
+                                            <td>{entry.is_active}</td>
                                             <td>{entry.duration}</td>
                                         </tr>
                                     ))}
