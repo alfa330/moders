@@ -1079,7 +1079,7 @@
                     const duration = nextTime - changeTime;
                     computed.push({
                         time: changeTime.toLocaleTimeString(),
-                        status: log.status || (log.is_active ? 'Active' : 'Inactive'),
+                        status: log.status,
                         duration: formatDuration(duration)
                     });
                 }
