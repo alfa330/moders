@@ -1046,8 +1046,8 @@
                   // === обновляем статус при входе ===
                   if (updateStatus && data.logs.length > 0) {
                     const lastLog = data.logs[data.logs.length - 1];
-                    setSelectedStatus(lastLog.status || (lastLog.is_active ? "active" : "inactive"));
-                    localStorage.setItem("lastStatus", lastLog.status || (lastLog.is_active ? "active" : "inactive"));
+                    setSelectedStatus(lastLog.status);
+                    localStorage.setItem("lastStatus", lastLog.status);
                   }
                 } else {
                   showNotification(data.error || 'Ошибка загрузки логов');
