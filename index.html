@@ -1406,13 +1406,13 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {computedActivity.map((entry, index) => (
-                                        <tr key={index}>
-                                            <td>{entry.time}</td>
-                                            <td>{entry.status}</td>
-                                            <td>{entry.duration}</td>
-                                        </tr>
-                                    ))}
+                                {[...computedActivity].reverse().map((entry, index) => (
+                                  <tr key={index}>
+                                    <td>{entry.time}</td>
+                                    <td>{entry.status}</td>
+                                    <td>{entry.duration}</td>
+                                  </tr>
+                                ))}
                                 </tbody>
                             </table>
                         ) : (
