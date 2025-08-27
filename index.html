@@ -1440,17 +1440,32 @@
                     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
                         <div className="sidebar-content">
                             {userData.role === 'operator' && (
-                                <>
-                                    {userData.isActive ? (
-                                        <button onClick={() => setShowStatusModal(true)} disabled={isTogglingActive}>
-                                            {isTogglingActive ? <div className="loader"></div> : (selectedStatus || "Изменить статус")}
-                                        </button>
-                                    ) : (
-                                        <button onClick={() => { setSelectedStatus("active"); toggleActive("active"); }} disabled={isTogglingActive}>
-                                            {isTogglingActive ? <div className="loader"></div> : 'Активировать'}
-                                        </button>
-                                    )}
-                                </>
+                              <>
+                                {selectedStatus === "inactive" ? (
+                                  <button 
+                                    onClick={() => { setSelectedStatus("active"); toggleActive("active"); }} 
+                                    disabled={isTogglingActive}
+                                  >
+                                    {isTogglingActive ? <div className="loader"></div> : "Начать смену"}
+                                  </button>
+                                ) : selectedStatus === "active" ? (
+                                  <button onClick={() => setShowStatusModal(true)} disabled={isTogglingActive}>
+                                    {isTogglingActive ? <div className="loader"></div> : "Вы активны"}
+                                  </button>
+                                ) : selectedStatus === "break" ? (
+                                  <button onClick={() => setShowStatusModal(true)} disabled={isTogglingActive}>
+                                    {isTogglingActive ? <div className="loader"></div> : "Не активен: Перерыв"}
+                                  </button>
+                                ) : selectedStatus === "training" ? (
+                                  <button onClick={() => setShowStatusModal(true)} disabled={isTogglingActive}>
+                                    {isTogglingActive ? <div className="loader"></div> : "Не активен: Тренинг"}
+                                  </button>
+                                ) : selectedStatus === "tech" ? (
+                                  <button onClick={() => setShowStatusModal(true)} disabled={isTogglingActive}>
+                                    {isTogglingActive ? <div className="loader"></div> : "Не активен: Тех. причина"}
+                                  </button>
+                                ) : null}
+                              </>
                             )}
                             <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
                             <button onClick={divideButtons} disabled={isDividing || isFetchingOperators}>
