@@ -821,6 +821,7 @@
             const [showStatusSelect, setShowStatusSelect] = useState(false);
             const [selectedStatus, setSelectedStatus] = useState('');
             const [showStatusModal, setShowStatusModal] = useState(false);
+            const [modalStatus, setModalStatus] = useState('');
 
             useEffect(() => {
                 document.body.className = theme === 'dark' ? 'dark' : '';
@@ -1449,19 +1450,19 @@
                                     {isTogglingActive ? <div className="loader"></div> : "Начать смену"}
                                   </button>
                                 ) : selectedStatus === "active" ? (
-                                  <button onClick={() => setShowStatusModal(true)} disabled={isTogglingActive}>
+                                  <button onClick={() =>{setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
                                     {isTogglingActive ? <div className="loader"></div> : "Вы активны"}
                                   </button>
                                 ) : selectedStatus === "break" ? (
-                                  <button onClick={() => setShowStatusModal(true)} disabled={isTogglingActive}>
+                                  <button onClick={() =>{setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
                                     {isTogglingActive ? <div className="loader"></div> : "Не активен: Перерыв"}
                                   </button>
                                 ) : selectedStatus === "training" ? (
-                                  <button onClick={() => setShowStatusModal(true)} disabled={isTogglingActive}>
+                                  <button onClick={() =>{setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
                                     {isTogglingActive ? <div className="loader"></div> : "Не активен: Тренинг"}
                                   </button>
                                 ) : selectedStatus === "tech" ? (
-                                  <button onClick={() => setShowStatusModal(true)} disabled={isTogglingActive}>
+                                  <button onClick={() =>{setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
                                     {isTogglingActive ? <div className="loader"></div> : "Не активен: Тех. причина"}
                                   </button>
                                 ) : null}
@@ -1626,7 +1627,7 @@
                           <h3>Выбор статуса</h3>
                           <select
                             value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
+                            onChange={(e) => setModalStatus(e.target.value)}
                           >
                             <option value="active">Начало смены</option>
                             <option value="break">Перерыв</option>
@@ -1635,7 +1636,11 @@
                             <option value="inactive">Завершить смену</option>
                           </select>
                           <div className="modal-buttons">
-                            <button onClick={() => { toggleActive(selectedStatus); setShowStatusModal(false); }}>
+                            <button onClick={() => { 
+                              setSelectedStatus(modalStatus); 
+                              toggleActive(modalStatus); 
+                              setShowStatusModal(false); 
+                            }}>
                               Сохранить
                             </button>
                             <button onClick={() => setShowStatusModal(false)}>Отмена</button>
