@@ -1406,7 +1406,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                {[...computedActivity].reverse().map((entry, index) => (
+                                {computedActivity.slice().reverse().map((entry, index) => (
                                   <tr key={index}>
                                     <td>{entry.time}</td>
                                     <td>{entry.status}</td>
