@@ -1460,17 +1460,46 @@
                   </div>
             
                   {/* === Суммарное время по статусам === */}
-                  <div style={{ marginBottom: "20px" }}>
-                    <h3>Сумма по статусам</h3>
-                    <ul style={{ listStyle: "none", padding: 0 }}>
-                      {Object.entries(totals).map(([status, ms]) => (
+                <div style={{ marginBottom: "20px" }}>
+                  <h3>Сводка по статусам</h3>
+                  <ul style={{ listStyle: "none", padding: 0 }}>
+                    {Object.entries(totals).map(([status, ms]) => {
+                      let label = status;
+                
+                      if (status === "active") label = "Активен";
+                      if (status === "break") label = "Перерыв";
+                      if (status === "tech") label = "Тех. причина";
+                      if (status === "training") label = "Тренинг";
+                
+                      // === особая обработка для inactive ===
+                      if (status === "inactive") {
+                        const inactiveLog = activityLogs.find(l => l.is_active === "inactive");
+                        if (inactiveLog) {
+                          const hour = new Date(inactiveLog.change_time).getHours();
+                          label = `Смена завершена в ${hour.toString().padStart(2, "0")}:00`;
+                        } else {
+                          label = "Смена завершена";
+                        }
+                      }
+                
+                      return (
                         <li key={status} style={{ margin: "4px 0" }}>
-                          <span style={{ display: "inline-block", width: "12px", height: "12px", background: statusColors[status] || "#999", marginRight: "8px" }}></span>
-                          {status}: {formatDuration(ms)}
+                          <span
+                            style={{
+                              display: "inline-block",
+                              width: "12px",
+                              height: "12px",
+                              background: statusColors[status] || "#999",
+                              marginRight: "8px"
+                            }}
+                          ></span>
+                          {label}: {status !== "inactive" ? formatDuration(ms) : ""}
                         </li>
-                      ))}
-                    </ul>
-                  </div>
+                      );
+                    })}
+                  </ul>
+                </div>
+
             
                   {/* === Таблица логов === */}
                   {computedActivity.length > 0 ? (
