@@ -1631,18 +1631,22 @@
                             value={modalStatus}
                             onChange={(e) => setModalStatus(e.target.value)}
                           >
-                            <option value="active">Начало смены</option>
+                            {selectedStatus !== "active" && (
+                              <option value="active">Подключиться</option>
+                            )}
                             <option value="break">Перерыв</option>
                             <option value="tech">Тех. причина</option>
                             <option value="training">Тренинг</option>
                             <option value="inactive">Завершить смену</option>
                           </select>
                           <div className="modal-buttons">
-                            <button onClick={() => { 
-                              setSelectedStatus(modalStatus); 
-                              toggleActive(modalStatus); 
-                              setShowStatusModal(false); 
-                            }}>
+                            <button
+                              onClick={() => {
+                                setSelectedStatus(modalStatus);
+                                toggleActive(modalStatus);
+                                setShowStatusModal(false);
+                              }}
+                            >
                               Сохранить
                             </button>
                             <button onClick={() => setShowStatusModal(false)}>Отмена</button>
