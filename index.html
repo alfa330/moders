@@ -1392,34 +1392,92 @@
             };
 
             const renderActivityTab = () => {
-                const computedActivity = computeActivity();
-                return (
-                    <div className="activity-log">
-                        <h2>Активность за сегодня</h2>
-                        {computedActivity.length > 0 ? (
-                            <table className="activity-table">
-                                <thead>
-                                    <tr>
-                                        <th>Время</th>
-                                        <th>Статус</th>
-                                        <th>Длительность</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                {computedActivity.slice().reverse().map((entry, index) => (
-                                  <tr key={index}>
-                                    <td>{entry.time}</td>
-                                    <td>{entry.status}</td>
-                                    <td>{entry.duration}</td>
-                                  </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        ) : (
-                            <p>Нет записей за сегодня</p>
-                        )}
-                    </div>
-                );
+              const computedActivity = computeActivity();
+            
+              // === считаем отрезки для таймлайна ===
+              const now = new Date();
+              const startOfDay = new Date();
+              startOfDay.setHours(0, 0, 0, 0);
+            
+              const segments = activityLogs.map((log, i) => {
+                const start = new Date(log.change_time);
+                const end = i < activityLogs.length - 1 ? new Date(activityLogs[i + 1].change_time) : now;
+                const durationMs = end - start;
+            
+                return {
+                  status: log.is_active,
+                  start,
+                  end,
+                  duration: formatDuration(durationMs),
+                  percentStart: ((start - startOfDay) / (24 * 3600 * 1000)) * 100,
+                  percentWidth: ((durationMs) / (24 * 3600 * 1000)) * 100
+                };
+              });
+            
+              const statusColors = {
+                active: "#4caf50",
+                break: "#ff9800",
+                tech: "#9c27b0",
+                training: "#2196f3",
+                inactive: "#f44336"
+              };
+            
+              return (
+                <div className="activity-log">
+                  <h2>Активность за сегодня</h2>
+            
+                  {/* === Таймлайн === */}
+                  <div style={{ position: "relative", height: "30px", background: "#eee", borderRadius: "6px", marginBottom: "10px" }}>
+                    {segments.map((seg, idx) => (
+                      <div
+                        key={idx}
+                        title={`${seg.status} — ${seg.duration}`}
+                        style={{
+                          position: "absolute",
+                          left: `${seg.percentStart}%`,
+                          width: `${seg.percentWidth}%`,
+                          height: "100%",
+                          background: statusColors[seg.status] || "#999",
+                          borderRadius: "4px"
+                        }}
+                      />
+                    ))}
+                  </div>
+            
+                  {/* === Подписи времени === */}
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#666", marginBottom: "20px" }}>
+                    <span>00:00</span>
+                    <span>06:00</span>
+                    <span>12:00</span>
+                    <span>18:00</span>
+                    <span>24:00</span>
+                  </div>
+            
+                  {/* === Таблица логов === */}
+                  {computedActivity.length > 0 ? (
+                    <table className="activity-table">
+                      <thead>
+                        <tr>
+                          <th>Время</th>
+                          <th>Статус</th>
+                          <th>Длительность</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {computedActivity.slice().reverse().map((entry, index) => (
+                          <tr key={index}>
+                            <td>{entry.time}</td>
+                            <td>{entry.status}</td>
+                            <td>{entry.duration}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p>Нет записей за сегодня</p>
+                  )}
+                </div>
+              );
             };
 
             if (!loggedIn) {
