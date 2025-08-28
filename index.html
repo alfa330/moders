@@ -1408,11 +1408,18 @@
                   status: log.is_active,
                   start,
                   end,
+                  durationMs,
                   duration: formatDuration(durationMs),
                   percentStart: ((start - startOfDay) / (24 * 3600 * 1000)) * 100,
                   percentWidth: ((durationMs) / (24 * 3600 * 1000)) * 100
                 };
               });
+            
+              // === суммарное время по каждому статусу ===
+              const totals = segments.reduce((acc, seg) => {
+                acc[seg.status] = (acc[seg.status] || 0) + seg.durationMs;
+                return acc;
+              }, {});
             
               const statusColors = {
                 active: "#4caf50",
@@ -1427,7 +1434,7 @@
                   <h2>Активность за сегодня</h2>
             
                   {/* === Таймлайн === */}
-                  <div style={{ position: "relative", height: "30px", background: "#eee", borderRadius: "6px", marginBottom: "10px" }}>
+                  <div style={{ position: "relative", height: "30px", background: "#eee", marginBottom: "10px" }}>
                     {segments.map((seg, idx) => (
                       <div
                         key={idx}
@@ -1437,8 +1444,7 @@
                           left: `${seg.percentStart}%`,
                           width: `${seg.percentWidth}%`,
                           height: "100%",
-                          background: statusColors[seg.status] || "#999",
-                          borderRadius: "4px"
+                          background: statusColors[seg.status] || "#999"
                         }}
                       />
                     ))}
@@ -1451,6 +1457,19 @@
                     <span>12:00</span>
                     <span>18:00</span>
                     <span>24:00</span>
+                  </div>
+            
+                  {/* === Суммарное время по статусам === */}
+                  <div style={{ marginBottom: "20px" }}>
+                    <h3>Сумма по статусам</h3>
+                    <ul style={{ listStyle: "none", padding: 0 }}>
+                      {Object.entries(totals).map(([status, ms]) => (
+                        <li key={status} style={{ margin: "4px 0" }}>
+                          <span style={{ display: "inline-block", width: "12px", height: "12px", background: statusColors[status] || "#999", marginRight: "8px" }}></span>
+                          {status}: {formatDuration(ms)}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
             
                   {/* === Таблица логов === */}
