@@ -1752,7 +1752,7 @@
                               onClick={() => {
                                 setSelectedStatus(modalStatus);
                                 toggleActive(modalStatus);
-                                renderActivityTab();
+                                fetchActivityLogs(savedApiKey, parsedUser.id, true);
                                 setShowStatusModal(false);
                               }}
                             >
