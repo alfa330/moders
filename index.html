@@ -822,6 +822,7 @@
             const [selectedStatus, setSelectedStatus] = useState('');
             const [showStatusModal, setShowStatusModal] = useState(false);
             const [modalStatus, setModalStatus] = useState('');
+            const [currentDuration, setCurrentDuration] = useState(0);
 
             useEffect(() => {
                 document.body.className = theme === 'dark' ? 'dark' : '';
