@@ -1477,7 +1477,7 @@
                           if (inactiveLog) {
                             const date = new Date(inactiveLog.change_time);
                             const hours = date.getHours().toString().padStart(2, "0");
-                            const minutes = date.getMinutes().toString().padStart(2, "0");
+                            const minutes = date.getMinutes().toString().padStart(2, "0").slice(0, 2);
                             label = `Смена завершена в ${hours}:${minutes}`;
                           } else {
                             label = "Смена завершена";
