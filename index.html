@@ -1473,14 +1473,16 @@
                 
                       // === особая обработка для inactive ===
                       if (status === "inactive") {
-                        const inactiveLog = activityLogs.find(l => l.is_active === "inactive");
-                        if (inactiveLog) {
-                          const hour = new Date(inactiveLog.change_time).getHours();
-                          label = `Смена завершена в ${hour.toString().padStart(2, "0")}:00`;
-                        } else {
-                          label = "Смена завершена";
+                          const inactiveLog = activityLogs.find(l => l.is_active === "inactive");
+                          if (inactiveLog) {
+                            const date = new Date(inactiveLog.change_time);
+                            const hours = date.getHours().toString().padStart(2, "0");
+                            const minutes = date.getMinutes().toString().padStart(2, "0");
+                            label = `Смена завершена в ${hours}:${minutes}`;
+                          } else {
+                            label = "Смена завершена";
+                          }
                         }
-                      }
                 
                       return (
                         <li key={status} style={{ margin: "4px 0" }}>
