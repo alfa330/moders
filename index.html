@@ -822,7 +822,6 @@
             const [selectedStatus, setSelectedStatus] = useState('');
             const [showStatusModal, setShowStatusModal] = useState(false);
             const [modalStatus, setModalStatus] = useState('');
-            const [currentDuration, setCurrentDuration] = useState(0);
 
             useEffect(() => {
                 document.body.className = theme === 'dark' ? 'dark' : '';
@@ -1063,21 +1062,6 @@
                     fetchActivityLogs();
                 }
             }, [currentTab]);
-
-            useEffect(() => {
-              if (activityLogs.length === 0) return;
-            
-              const lastLog = activityLogs[activityLogs.length - 1];
-              const startTime = new Date(lastLog.change_time);
-            
-              const update = () => {
-                setCurrentDuration(Date.now() - startTime.getTime());
-              };
-            
-              update(); // сразу при старте
-              const interval = setInterval(update, 1000);
-              return () => clearInterval(interval);
-            }, [activityLogs]);
 
             const formatDuration = (ms) => {
                 if (ms <= 0) return '0s';
@@ -1516,12 +1500,6 @@
                       );
                     })}
                   </ul>
-                  {activityLogs.length > 0 && (
-                      <div style={{ marginTop: "10px", fontWeight: "bold" }}>
-                        Текущий статус: {activityLogs[activityLogs.length - 1].is_active} —{" "}
-                        {formatDuration(currentDuration)}
-                      </div>
-                    )}
                 </div>
 
             
