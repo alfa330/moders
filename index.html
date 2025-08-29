@@ -1322,23 +1322,44 @@
             };
 
             const divideButtons = async () => {
-                setIsDividing(true);
-                await fetchActiveOperators(apiKey);
-                const start = parseInt(startButton);
-                if (isNaN(start) || start < 1) {
-                    showNotification('Введите корректный номер!');
-                    setIsDividing(false);
-                    return;
-                }
-                if (activeOperators.length === 0) {
-                    showNotification('Нет активных операторов!');
-                    setIsDividing(false);
-                    return;
-                }
-                const res = activeOperators.map((op, index) => `${start + index} - ${op.name.split(' ')[1]}`).join('\n');
-                setResult(res);
-                showNotification('Тикеты поделены!');
+              setIsDividing(true);
+              await fetchActiveOperators(apiKey);
+            
+              const start = parseInt(startButton);
+              if (isNaN(start) || start < 1) {
+                showNotification('Введите корректный номер!');
                 setIsDividing(false);
+                return;
+              }
+            
+              // находим текущего оператора в списке
+              const currentOp = activeOperators.find(op => op.id === userData.id);
+            
+              if (!currentOp) {
+                showNotification('Переведите статус в Активный что бы делить!');
+                setIsDividing(false);
+                return;
+              }
+            
+              // берём его направление
+              const dirId = currentOp.direction_id;
+            
+              // фильтруем только тех, у кого совпадает направление
+              const filteredOps = activeOperators.filter(op => op.direction_id === dirId);
+            
+              if (filteredOps.length === 0) {
+                showNotification('Нет активных операторов в вашем направлении!');
+                setIsDividing(false);
+                return;
+              }
+            
+              const res = filteredOps.map((op, index) =>
+                `${start + index} - ${op.name.split(' ')[1]}`
+              ).join('\n');
+            
+              setResult(res);
+              showNotification('Тикеты поделены!');
+              setIsDividing(false);
             };
 
             const copyResult = () => {
