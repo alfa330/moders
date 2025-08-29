@@ -828,9 +828,9 @@
             
             const fetchOperators = async () => {
                 try {
-                    const response = await fetch('${API_BASE_URL}/api/sv/operators', {
+                    const response = await fetch(`${API_BASE_URL}/api/sv/operators`, {
                         headers: {
-                            'X-API-Key': API_KEY,  // Предполагаем, что API_KEY сохранен после логина
+                            'X-API-Key': userData.apiKey,  // Предполагаем, что API_KEY сохранен после логина
                             'X-User-Id': userData.id
                         }
                     });
