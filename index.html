@@ -872,7 +872,7 @@
                     const parsedUser = JSON.parse(savedUserData);
                     if (parsedUser.role ==="sv"){
                         fetchOperators(savedApiKey, parsedUser.id);
-                        const savedApiKey = localStorage.getItem("apiKey");
+                        setCurrentTab('activity');
                     } else {
                         fetchActivityLogs(savedApiKey, parsedUser.id, parsedUser.id, true);
                     }
@@ -972,6 +972,7 @@
             
                         if (user && user.role && user.role.toLowerCase() === "sv") {
                             fetchOperators(data.apiKey, data.id);
+                            setCurrentTab('activity');
                         } else {
                             console.log("⛔ fetchOperators НЕ вызван, роль:", user.role);
                         }
