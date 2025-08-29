@@ -1086,7 +1086,11 @@
 
             const fetchActivityLogs = async (key = apiKey, userId = userData?.id, operatorId = userData.id, updateStatus = false) => {
               try {
-                const today = new Date().toISOString().split('T')[0];
+                const dateToFormat = new Date();
+                const year = dateToFormat.getFullYear();
+                const month = String(dateToFormat.getMonth() + 1).padStart(2, '0'); // Месяцы начинаются с 0
+                const day = String(dateToFormat.getDate()).padStart(2, '0');
+                const today = `${year}-${month}-${day}`;
                 const res = await fetch(`${API_BASE_URL}/api/operator/activity?operator_id=${operatorId}&date=${today}`, {
                   headers: { 
                     'X-API-Key': key,
