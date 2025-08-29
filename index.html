@@ -870,7 +870,7 @@
                     const parsedUser = JSON.parse(savedUserData);
                     fetchActivityLogs(savedApiKey, parsedUser.id, true);
                 }
-                if (userData && userData.role ==="sv"){
+                if (parsedUser && parsedUser.role ==="sv"){
                     fetchOperators();
                 }
             }, []);
@@ -952,16 +952,16 @@
                         const user = { id: data.id, name: data.name, role: data.role, isActive: false };
                         setApiKey(data.apiKey);
                         setUserData(user);
+                        console.log(userData);
                         setLoggedIn(true);
                         showNotification('Вход успешен!');
                         localStorage.setItem("apiKey", data.apiKey);
                         localStorage.setItem("userData", JSON.stringify(user));
                         fetchActiveOperators(data.apiKey);
-                        await fetchActivityLogs(data.apiKey, data.id, true);
-                        console.log(userData);
-                        if (userData && userData.role ==="sv"){
+                        if (data && data.role ==="sv"){
                             fetchOperators();
                         }
+                        await fetchActivityLogs(data.apiKey, data.id, true);
                     } else {
                         showNotification(data.error || 'Ошибка входа');
                     }
