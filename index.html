@@ -850,7 +850,7 @@
             
             useEffect(() => {
                 if (userData && userData.role === 'sv' && selectedOperator) {
-                    fetchActivityLogs(userData.apiKey,selectedOperator);  // Загружать логи для выбранного оператора
+                    fetchActivityLogs(userData.apiKey, userData.id, selectedOperator);  // Загружать логи для выбранного оператора
                 }
             }, [selectedOperator, userData]);
 
@@ -868,9 +868,9 @@
                     setLoggedIn(true);
                     fetchActiveOperators(savedApiKey);
                     const parsedUser = JSON.parse(savedUserData);
-                    fetchActivityLogs(savedApiKey, parsedUser.id, true);
+                    fetchActivityLogs(savedApiKey, parsedUser.id, parsedUser.id, true);
                     if (parsedUser.role ==="sv"){
-                        fetchOperators();
+                        fetchOperators(parsedUser.apiKey, parsedUser.id);
                     }
                 }
             }, []);
@@ -972,7 +972,7 @@
                             console.log("⛔ fetchOperators НЕ вызван, роль:", user.role);
                         }
             
-                        await fetchActivityLogs(data.apiKey, data.id, true);
+                        await fetchActivityLogs(data.apiKey, data.id, data.id, true);
             
                     } else {
                         showNotification(data.error || 'Ошибка входа');
@@ -1081,10 +1081,10 @@
                 setIsGeneratingReport(false);
             };
 
-            const fetchActivityLogs = async (key = apiKey, userId = userData?.id, updateStatus = false) => {
+            const fetchActivityLogs = async (key = apiKey, userId = userData?.id, operatorId = userData.id, updateStatus = false) => {
               try {
                 const today = new Date().toISOString().split('T')[0];
-                const res = await fetch(`${API_BASE_URL}/api/user/activity_logs?date=${today}`, {
+                const res = await fetch(`${API_BASE_URL}/api/operator/activity?operator_id=${operatorId}&date=${today}`, {
                   headers: { 
                     'X-API-Key': key,
                     'X-User-Id': userId
