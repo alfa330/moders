@@ -822,12 +822,70 @@
             const [selectedStatus, setSelectedStatus] = useState('');
             const [showStatusModal, setShowStatusModal] = useState(false);
             const [modalStatus, setModalStatus] = useState('');
+            const [operators, setOperators] = useState([]);  // Список операторов для 'sv'
+            const [selectedOperator, setSelectedOperator] = useState(null);  // Выбранный оператор
+            
+            useEffect(() => {
+                if (userData && userData.role === 'sv') {
+                    fetchOperators();
+                }
+            }, [userData]);
+            
+            const fetchOperators = async () => {
+                try {
+                    const response = await fetch('${API_BASE_URL}/api/sv/operators', {
+                        headers: {
+                            'X-API-Key': API_KEY,  // Предполагаем, что API_KEY сохранен после логина
+                            'X-User-Id': userData.id
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        setOperators(data.operators);
+                        if (data.operators.length > 0) {
+                            setSelectedOperator(data.operators[0].id);  // Выбрать первого по умолчанию
+                        }
+                    } else {
+                        showNotification('Ошибка загрузки операторов: ' + data.error);
+                    }
+                } catch (error) {
+                    showNotification('Ошибка сети при загрузке операторов');
+                }
+            };
+            
+            useEffect(() => {
+                if (userData && userData.role === 'sv' && selectedOperator) {
+                    fetchActivityLogs(selectedOperator);  // Загружать логи для выбранного оператора
+                }
+            }, [selectedOperator, userData]);
 
             useEffect(() => {
                 document.body.className = theme === 'dark' ? 'dark' : '';
                 localStorage.setItem('theme', theme);
             }, [theme]);
 
+            const fetchActivityLogs = async (operatorId = userData.id) => {  // По умолчанию свой ID для operator
+                setIsFetchingActivity(true);
+                try {
+                    const response = await fetch(`/api/operator/activity?operator_id=${operatorId}&date=${date}`, {
+                        headers: {
+                            'X-API-Key': API_KEY,
+                            'X-User-Id': userData.id
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        setActivityLogs(data.logs);
+                    } else {
+                        showNotification('Ошибка загрузки активности: ' + data.error);
+                    }
+                } catch (error) {
+                    showNotification('Ошибка сети при загрузке активности');
+                } finally {
+                    setIsFetchingActivity(false);
+                }
+            };
+            
             useEffect(() => {
                 const savedApiKey = localStorage.getItem("apiKey");
                 const savedUserData = localStorage.getItem("userData");
@@ -1426,7 +1484,7 @@
                   durationMs,
                   duration: formatDuration(durationMs),
                   percentStart: ((start - startOfDay) / (24 * 3600 * 1000)) * 100,
-                  percentWidth: ((durationMs) / (24 * 3600 * 1000)) * 100
+                  percentWidth: (durationMs / (24 * 3600 * 1000)) * 100
                 };
               });
             
@@ -1446,100 +1504,125 @@
             
               return (
                 <div className="activity-log">
-                  <h2>Активность за сегодня</h2>
+                  <h2>Активность {userData.role === 'sv' ? 'операторов' : 'за сегодня'}</h2>
             
-                  {/* === Таймлайн === */}
-                  <div style={{ position: "relative", height: "30px", background: "#eee", marginBottom: "10px" }}>
-                    {segments.map((seg, idx) => (
-                      <div
-                        key={idx}
-                        title={`${seg.status} — ${seg.duration}`}
-                        style={{
-                          position: "absolute",
-                          left: `${seg.percentStart}%`,
-                          width: `${seg.percentWidth}%`,
-                          height: "100%",
-                          background: statusColors[seg.status] || "#999"
-                        }}
-                      />
-                    ))}
-                  </div>
+                  {userData.role === 'sv' && (
+                    <select
+                      value={selectedOperator || ''}
+                      onChange={(e) => setSelectedOperator(e.target.value)}
+                    >
+                      <option value="">Выберите оператора</option>
+                      {operators.map(op => (
+                        <option key={op.id} value={op.id}>{op.name}</option>
+                      ))}
+                    </select>
+                  )}
             
-                  {/* === Подписи времени === */}
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#666", marginBottom: "20px" }}>
-                    <span>00:00</span>
-                    <span>06:00</span>
-                    <span>12:00</span>
-                    <span>18:00</span>
-                    <span>24:00</span>
-                  </div>
-            
-                  {/* === Суммарное время по статусам === */}
-                <div style={{ marginBottom: "20px" }}>
-                  <h3>Сводка по статусам</h3>
-                  <ul style={{ listStyle: "none", padding: 0 }}>
-                    {Object.entries(totals).map(([status, ms]) => {
-                      let label = status;
-                
-                      if (status === "active") label = "Активен";
-                      if (status === "break") label = "Перерыв";
-                      if (status === "tech") label = "Тех. причина";
-                      if (status === "training") label = "Тренинг";
-                
-                      // === особая обработка для inactive ===
-                      if (status === "inactive") {
-                          const inactiveLog = activityLogs.find(l => l.is_active === "inactive");
-                          if (inactiveLog) {
-                            const date = new Date(inactiveLog.change_time);
-                            const hours = date.getHours().toString().padStart(2, "0");
-                            const minutes = date.getMinutes().toString().padStart(2, "0");
-                            label = `Смена завершена в ${hours}:${minutes}`;
-                          } else {
-                            label = "Смена завершена";
-                          }
-                        }
-                
-                      return (
-                        <li key={status} style={{ margin: "4px 0" }}>
-                          <span
+                  {isFetchingActivity ? (
+                    <div className="loader"></div>
+                  ) : selectedOperator || userData.role !== 'sv' ? (
+                    <>
+                      {/* === Таймлайн === */}
+                      <div style={{ position: "relative", height: "30px", background: "#eee", marginBottom: "10px" }}>
+                        {segments.map((seg, idx) => (
+                          <div
+                            key={idx}
+                            title={`${seg.status} — ${seg.duration}`}
                             style={{
-                              display: "inline-block",
-                              width: "12px",
-                              height: "12px",
-                              background: statusColors[status] || "#999",
-                              marginRight: "8px"
+                              position: "absolute",
+                              left: `${seg.percentStart}%`,
+                              width: `${seg.percentWidth}%`,
+                              height: "100%",
+                              background: statusColors[seg.status] || "#999"
                             }}
-                          ></span>
-                          {label} {status !== "inactive" ? formatDuration(ms) : ""}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-
-            
-                  {/* === Таблица логов === */}
-                  {computedActivity.length > 0 ? (
-                    <table className="activity-table">
-                      <thead>
-                        <tr>
-                          <th>Время</th>
-                          <th>Статус</th>
-                          <th>Длительность</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {computedActivity.slice().reverse().map((entry, index) => (
-                          <tr key={index}>
-                            <td>{entry.time}</td>
-                            <td>{entry.status}</td>
-                            <td>{entry.duration}</td>
-                          </tr>
+                          />
                         ))}
-                      </tbody>
-                    </table>
+                      </div>
+            
+                      {/* === Подписи времени === */}
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: "12px",
+                        color: "#666",
+                        marginBottom: "20px"
+                      }}>
+                        <span>00:00</span>
+                        <span>06:00</span>
+                        <span>12:00</span>
+                        <span>18:00</span>
+                        <span>24:00</span>
+                      </div>
+            
+                      {/* === Суммарное время по статусам === */}
+                      <div style={{ marginBottom: "20px" }}>
+                        <h3>Сводка по статусам</h3>
+                        <ul style={{ listStyle: "none", padding: 0 }}>
+                          {Object.entries(totals).map(([status, ms]) => {
+                            let label = status;
+            
+                            if (status === "active") label = "Активен";
+                            if (status === "break") label = "Перерыв";
+                            if (status === "tech") label = "Тех. причина";
+                            if (status === "training") label = "Тренинг";
+            
+                            // === особая обработка для inactive ===
+                            if (status === "inactive") {
+                              const inactiveLog = activityLogs.find(l => l.is_active === "inactive");
+                              if (inactiveLog) {
+                                const date = new Date(inactiveLog.change_time);
+                                const hours = date.getHours().toString().padStart(2, "0");
+                                const minutes = date.getMinutes().toString().padStart(2, "0");
+                                label = `Смена завершена в ${hours}:${minutes}`;
+                              } else {
+                                label = "Смена завершена";
+                              }
+                            }
+            
+                            return (
+                              <li key={status} style={{ margin: "4px 0" }}>
+                                <span
+                                  style={{
+                                    display: "inline-block",
+                                    width: "12px",
+                                    height: "12px",
+                                    background: statusColors[status] || "#999",
+                                    marginRight: "8px"
+                                  }}
+                                ></span>
+                                {label} {status !== "inactive" ? formatDuration(ms) : ""}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+            
+                      {/* === Таблица логов === */}
+                      {computedActivity.length > 0 ? (
+                        <table className="activity-table">
+                          <thead>
+                            <tr>
+                              <th>Время</th>
+                              <th>Статус</th>
+                              <th>Длительность</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {computedActivity.slice().reverse().map((entry, index) => (
+                              <tr key={index}>
+                                <td>{entry.time}</td>
+                                <td>{entry.status}</td>
+                                <td>{entry.duration}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <p>Нет записей за сегодня</p>
+                      )}
+                    </>
                   ) : (
-                    <p>Нет записей за сегодня</p>
+                    <p>Выберите оператора для просмотра активности</p>
                   )}
                 </div>
               );
@@ -1597,20 +1680,20 @@
                         </div>
                     )}
                     <div className="tabs">
-                        <button 
-                            className={`tab-button ${currentTab === 'tasks' ? 'active' : ''}`} 
-                            onClick={() => setCurrentTab('tasks')}
-                        >
-                            Задачи
-                        </button>
-                        {userData.role === 'operator' && (
+                        {userData.role !== 'sv' && (
                             <button 
-                                className={`tab-button ${currentTab === 'activity' ? 'active' : ''}`} 
-                                onClick={() => setCurrentTab('activity')}
+                                className={`tab-button ${currentTab === 'tasks' ? 'active' : ''}`} 
+                                onClick={() => setCurrentTab('tasks')}
                             >
-                                Активность
+                                Задачи
                             </button>
                         )}
+                        <button 
+                            className={`tab-button ${currentTab === 'activity' ? 'active' : ''}`} 
+                            onClick={() => setCurrentTab('activity')}
+                        >
+                            Активность
+                        </button>
                     </div>
                     <div className="container">
                         {currentTab === 'tasks' ? (
