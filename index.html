@@ -828,6 +828,8 @@
             
             const fetchOperators = async (apiKey, userId) => {
                 try {
+                    const today = new Date().toISOString();
+                    console.log(today);
                     const response = await fetch(`${API_BASE_URL}/api/sv/operators`, {
                         headers: {
                             'X-API-Key': apiKey,
