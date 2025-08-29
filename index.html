@@ -870,7 +870,7 @@
                     const parsedUser = JSON.parse(savedUserData);
                     fetchActivityLogs(savedApiKey, parsedUser.id, true);
                 }
-                if (userData.role ==="sv"){
+                if (userData && userData.role ==="sv"){
                     fetchOperators();
                 }
             }, []);
@@ -958,7 +958,8 @@
                         localStorage.setItem("userData", JSON.stringify(user));
                         fetchActiveOperators(data.apiKey);
                         await fetchActivityLogs(data.apiKey, data.id, true);
-                        if (userData.role ==="sv"){
+                        console.log(userData);
+                        if (userData && userData.role ==="sv"){
                             fetchOperators();
                         }
                     } else {
