@@ -850,7 +850,7 @@
             
             useEffect(() => {
                 if (userData && userData.role === 'sv' && selectedOperator) {
-                    fetchActivityLogs(savedApiKey,selectedOperator);  // Загружать логи для выбранного оператора
+                    fetchActivityLogs(userData.apiKey,selectedOperator);  // Загружать логи для выбранного оператора
                 }
             }, [selectedOperator, userData]);
 
