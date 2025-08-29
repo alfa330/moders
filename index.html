@@ -855,7 +855,7 @@
             
             useEffect(() => {
                 if (userData && userData.role === 'sv' && selectedOperator) {
-                    fetchActivityLogs(selectedOperator);  // Загружать логи для выбранного оператора
+                    fetchActivityLogs(savedApiKey,selectedOperator);  // Загружать логи для выбранного оператора
                 }
             }, [selectedOperator, userData]);
 
@@ -863,28 +863,6 @@
                 document.body.className = theme === 'dark' ? 'dark' : '';
                 localStorage.setItem('theme', theme);
             }, [theme]);
-
-            const fetchActivityLogs = async (operatorId = userData.id) => {  // По умолчанию свой ID для operator
-                setIsFetchingActivity(true);
-                try {
-                    const response = await fetch(`/api/operator/activity?operator_id=${operatorId}&date=${date}`, {
-                        headers: {
-                            'X-API-Key': API_KEY,
-                            'X-User-Id': userData.id
-                        }
-                    });
-                    const data = await response.json();
-                    if (data.status === 'success') {
-                        setActivityLogs(data.logs);
-                    } else {
-                        showNotification('Ошибка загрузки активности: ' + data.error);
-                    }
-                } catch (error) {
-                    showNotification('Ошибка сети при загрузке активности');
-                } finally {
-                    setIsFetchingActivity(false);
-                }
-            };
             
             useEffect(() => {
                 const savedApiKey = localStorage.getItem("apiKey");
