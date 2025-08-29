@@ -870,7 +870,7 @@
                     const parsedUser = JSON.parse(savedUserData);
                     fetchActivityLogs(savedApiKey, parsedUser.id, parsedUser.id, true);
                     if (parsedUser.role ==="sv"){
-                        fetchOperators(parsedUser.apiKey, parsedUser.id);
+                        fetchOperators(savedApiKey, parsedUser.id);
                     }
                 }
             }, []);
