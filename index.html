@@ -869,9 +869,9 @@
                     fetchActiveOperators(savedApiKey);
                     const parsedUser = JSON.parse(savedUserData);
                     fetchActivityLogs(savedApiKey, parsedUser.id, true);
-                }
-                if (parsedUser && parsedUser.role ==="sv"){
-                    fetchOperators();
+                    if (savedUserData.role ==="sv"){
+                        fetchOperators();
+                    }
                 }
             }, []);
             
