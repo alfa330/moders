@@ -872,6 +872,7 @@
                     const parsedUser = JSON.parse(savedUserData);
                     if (parsedUser.role ==="sv"){
                         fetchOperators(savedApiKey, parsedUser.id);
+                        const savedApiKey = localStorage.getItem("apiKey");
                     } else {
                         fetchActivityLogs(savedApiKey, parsedUser.id, parsedUser.id, true);
                     }
