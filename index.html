@@ -947,21 +947,34 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ login: loginValue, password: passwordValue })
                     });
+            
                     const data = await res.json();
+            
                     if (res.ok && data.status === 'success') {
                         const user = { id: data.id, name: data.name, role: data.role, isActive: false };
                         setApiKey(data.apiKey);
                         setUserData(user);
-                        console.log(user);
+                        console.log("USER OBJECT:", user);
+            
                         setLoggedIn(true);
                         showNotification('Вход успешен!');
                         localStorage.setItem("apiKey", data.apiKey);
                         localStorage.setItem("userData", JSON.stringify(user));
+            
                         fetchActiveOperators(data.apiKey);
-                        if (user && user.role ==="sv"){
+            
+                        // 🔍 Логируем роль
+                        console.log("ROLE FROM BACKEND:", user.role);
+            
+                        if (user && user.role && user.role.toLowerCase() === "sv") {
+                            console.log("✅ fetchOperators будет вызван");
                             fetchOperators();
+                        } else {
+                            console.log("⛔ fetchOperators НЕ вызван, роль:", user.role);
                         }
+            
                         await fetchActivityLogs(data.apiKey, data.id, true);
+            
                     } else {
                         showNotification(data.error || 'Ошибка входа');
                     }
@@ -970,6 +983,7 @@
                 }
                 setIsLoggingIn(false);
             };
+
 
             const fetchUserProfile = async (userId) => {
                 try {
