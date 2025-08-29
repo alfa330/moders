@@ -1496,9 +1496,7 @@
                     </select>
                   )}
             
-                  {isFetchingActivity ? (
-                    <div className="loader"></div>
-                  ) : selectedOperator || userData.role !== 'sv' ? (
+                  {selectedOperator || userData.role !== 'sv' ? (
                     <>
                       {/* === Таймлайн === */}
                       <div style={{ position: "relative", height: "30px", background: "#eee", marginBottom: "10px" }}>
