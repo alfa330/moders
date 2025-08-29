@@ -826,19 +826,19 @@
             const [selectedOperator, setSelectedOperator] = useState(null);  // Выбранный оператор
 
             
-            const fetchOperators = async () => {
+            const fetchOperators = async (apiKey, userId) => {
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/sv/operators`, {
                         headers: {
-                            'X-API-Key': userData.apiKey,  // Предполагаем, что API_KEY сохранен после логина
-                            'X-User-Id': userData.id
+                            'X-API-Key': apiKey,
+                            'X-User-Id': userId
                         }
                     });
                     const data = await response.json();
                     if (data.status === 'success') {
                         setOperators(data.operators);
                         if (data.operators.length > 0) {
-                            setSelectedOperator(data.operators[0].id);  // Выбрать первого по умолчанию
+                            setSelectedOperator(data.operators[0].id);
                         }
                     } else {
                         showNotification('Ошибка загрузки операторов: ' + data.error);
@@ -967,8 +967,7 @@
                         console.log("ROLE FROM BACKEND:", user.role);
             
                         if (user && user.role && user.role.toLowerCase() === "sv") {
-                            console.log("✅ fetchOperators будет вызван");
-                            fetchOperators();
+                            fetchOperators(data.apiKey, data.id);
                         } else {
                             console.log("⛔ fetchOperators НЕ вызван, роль:", user.role);
                         }
