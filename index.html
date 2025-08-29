@@ -868,9 +868,10 @@
                     setLoggedIn(true);
                     fetchActiveOperators(savedApiKey);
                     const parsedUser = JSON.parse(savedUserData);
-                    fetchActivityLogs(savedApiKey, parsedUser.id, parsedUser.id, true);
                     if (parsedUser.role ==="sv"){
                         fetchOperators(savedApiKey, parsedUser.id);
+                    } else {
+                        fetchActivityLogs(savedApiKey, parsedUser.id, parsedUser.id, true);
                     }
                 }
             }, []);
