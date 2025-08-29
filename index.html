@@ -869,7 +869,7 @@
                     fetchActiveOperators(savedApiKey);
                     const parsedUser = JSON.parse(savedUserData);
                     fetchActivityLogs(savedApiKey, parsedUser.id, true);
-                    if (savedUserData.role ==="sv"){
+                    if (parsedUser.role ==="sv"){
                         fetchOperators();
                     }
                 }
@@ -952,13 +952,13 @@
                         const user = { id: data.id, name: data.name, role: data.role, isActive: false };
                         setApiKey(data.apiKey);
                         setUserData(user);
-                        console.log(userData);
+                        console.log(user);
                         setLoggedIn(true);
                         showNotification('Вход успешен!');
                         localStorage.setItem("apiKey", data.apiKey);
                         localStorage.setItem("userData", JSON.stringify(user));
                         fetchActiveOperators(data.apiKey);
-                        if (data && data.role ==="sv"){
+                        if (user && user.role ==="sv"){
                             fetchOperators();
                         }
                         await fetchActivityLogs(data.apiKey, data.id, true);
