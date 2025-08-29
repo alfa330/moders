@@ -1637,9 +1637,8 @@
                             renderActivityTab()
                         )}
                     </div>
-                    <div className="status-selector">
-                      {userData.role === 'operator' && (
-                        <>
+                    {userData.role === 'operator' && (
+                        <div className="status-selector">
                           <h3>Статус</h3>
                           {!selectedStatus || selectedStatus === "inactive" ? (
                             <button 
@@ -1665,9 +1664,8 @@
                               {isTogglingActive ? <div className="loader"></div> : "Не активен: Тех. причина"}
                             </button>
                           ) : null}
-                        </>
+                        </div>
                       )}
-                    </div>
                     <div className={`notification ${notification.show ? 'show' : ''}`} id="notification">
                         {notification.message}
                     </div>
