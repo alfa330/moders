@@ -237,27 +237,27 @@
             background-color: #6b4e5a;
         }
 
-        .trash-bin {
-            width: 250px;
-            height: 50px;
-            background-color: var(--trash-bg);
-            color: white;
-            text-align: center;
-            line-height: 50px;
-            font-size: 16px;
-            border-radius: 10px;
+        .status-selector {
             position: fixed;
             bottom: 20px;
             right: 20px;
             z-index: 1000;
+            background: var(--column-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 20px;
             box-shadow: var(--shadow-light);
-            transition: transform 0.3s ease, background-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
         }
-
-        .trash-bin:hover,
-        .trash-bin.dragover {
-            background-color: var(--trash-hover);
-            transform: scale(1.05);
+        
+        .status-selector h3 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--text-color);
         }
 
         .notification {
@@ -1310,12 +1310,6 @@
                 });
             };
 
-            const dropInTrash = (e) => {
-                e.preventDefault();
-                document.getElementById('trashBin').classList.remove('dragover');
-                selectedButtons.forEach(selBtn => deleteButton(selBtn));
-            };
-
             const clearColumn = (columnId) => {
                 buttons[columnId].forEach(btn => {
                     if (timersRef.current.has(btn.id)) clearInterval(timersRef.current.get(btn.id));
@@ -1552,38 +1546,14 @@
                         <div className="sidebar-content">
                             {userData.role === 'operator' && (
                               <>
-                                {!selectedStatus || selectedStatus === "inactive" ? (
-                                  <button 
-                                    onClick={() => { setSelectedStatus("active"); toggleActive("active"); }} 
-                                    disabled={isTogglingActive}
-                                  >
-                                    {isTogglingActive ? <div className="loader"></div> : "Начать смену"}
-                                  </button>
-                                ) : selectedStatus === "active" ? (
-                                  <button onClick={() =>{setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
-                                    {isTogglingActive ? <div className="loader"></div> : "Вы активны"}
-                                  </button>
-                                ) : selectedStatus === "break" ? (
-                                  <button onClick={() =>{setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
-                                    {isTogglingActive ? <div className="loader"></div> : "Не активен: Перерыв"}
-                                  </button>
-                                ) : selectedStatus === "training" ? (
-                                  <button onClick={() =>{setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
-                                    {isTogglingActive ? <div className="loader"></div> : "Не активен: Тренинг"}
-                                  </button>
-                                ) : selectedStatus === "tech" ? (
-                                  <button onClick={() =>{setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
-                                    {isTogglingActive ? <div className="loader"></div> : "Не активен: Тех. причина"}
-                                  </button>
-                                ) : null}
-                              </>
+                                <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
+                                <button onClick={divideButtons} disabled={isDividing || isFetchingOperators}>
+                                    {isDividing || isFetchingOperators ? <div className="loader"></div> : 'Поделить'}
+                                </button>
+                                <textarea className="result-textarea" value={result} readOnly />
+                                <button onClick={copyResult}>Скопировать</button>
+                            </>
                             )}
-                            <input type="number" value={startButton} onChange={(e) => setStartButton(e.target.value)} placeholder="Начальный номер тикета" />
-                            <button onClick={divideButtons} disabled={isDividing || isFetchingOperators}>
-                                {isDividing || isFetchingOperators ? <div className="loader"></div> : 'Поделить'}
-                            </button>
-                            <textarea className="result-textarea" value={result} readOnly />
-                            <button onClick={copyResult}>Скопировать</button>
                             {userData.role !== 'operator' && (
                                 <>
                                     <input 
@@ -1667,8 +1637,36 @@
                             renderActivityTab()
                         )}
                     </div>
-                    <div className="trash-bin" id="trashBin" onDragOver={(e) => { e.preventDefault(); document.getElementById('trashBin').classList.add('dragover'); }} onDrop={dropInTrash} onDragLeave={() => document.getElementById('trashBin').classList.remove('dragover')}>
-                        Перетащите сюда для удаления
+                    <div className="status-selector">
+                      {userData.role === 'operator' && (
+                        <>
+                          <h3>Статус</h3>
+                          {!selectedStatus || selectedStatus === "inactive" ? (
+                            <button 
+                              onClick={() => { setSelectedStatus("active"); toggleActive("active"); }} 
+                              disabled={isTogglingActive}
+                            >
+                              {isTogglingActive ? <div className="loader"></div> : "Начать смену"}
+                            </button>
+                          ) : selectedStatus === "active" ? (
+                            <button onClick={() => { setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
+                              {isTogglingActive ? <div className="loader"></div> : "Вы активны"}
+                            </button>
+                          ) : selectedStatus === "break" ? (
+                            <button onClick={() => { setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
+                              {isTogglingActive ? <div className="loader"></div> : "Не активен: Перерыв"}
+                            </button>
+                          ) : selectedStatus === "training" ? (
+                            <button onClick={() => { setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
+                              {isTogglingActive ? <div className="loader"></div> : "Не активен: Тренинг"}
+                            </button>
+                          ) : selectedStatus === "tech" ? (
+                            <button onClick={() => { setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
+                              {isTogglingActive ? <div className="loader"></div> : "Не активен: Тех. причина"}
+                            </button>
+                          ) : null}
+                        </>
+                      )}
                     </div>
                     <div className={`notification ${notification.show ? 'show' : ''}`} id="notification">
                         {notification.message}
