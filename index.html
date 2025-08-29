@@ -824,12 +824,7 @@
             const [modalStatus, setModalStatus] = useState('');
             const [operators, setOperators] = useState([]);  // Список операторов для 'sv'
             const [selectedOperator, setSelectedOperator] = useState(null);  // Выбранный оператор
-            
-            useEffect(() => {
-                if (userData && userData.role === 'sv') {
-                    fetchOperators();
-                }
-            }, [userData]);
+
             
             const fetchOperators = async () => {
                 try {
@@ -874,6 +869,9 @@
                     fetchActiveOperators(savedApiKey);
                     const parsedUser = JSON.parse(savedUserData);
                     fetchActivityLogs(savedApiKey, parsedUser.id, true);
+                }
+                if (userData && userData.role ==="sv"){
+                    fetchOperators();
                 }
             }, []);
             
@@ -960,6 +958,9 @@
                         localStorage.setItem("userData", JSON.stringify(user));
                         fetchActiveOperators(data.apiKey);
                         await fetchActivityLogs(data.apiKey, data.id, true);
+                        if (userData && userData.role ==="sv"){
+                            fetchOperators();
+                        }
                     } else {
                         showNotification(data.error || 'Ошибка входа');
                     }
