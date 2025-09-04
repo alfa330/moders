@@ -1523,7 +1523,9 @@
                   {selectedOperator || userData.role !== 'sv' ? (
                     <>
                       {/* === Таймлайн === */}
-                      <div
+                      <div style={{ position: "relative", height: "30px", background: "#eee", marginBottom: "10px" }}>
+                        {segments.map((seg, idx) => (
+                        <div
                           key={idx}
                           title={`${seg.status} — ${seg.duration}`}
                           style={{
@@ -1539,7 +1541,7 @@
                         />
                         ))}
                       </div>
-            
+                    
                       {/* === Подписи времени === */}
                       <div style={{
                         display: "flex",
