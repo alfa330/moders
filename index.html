@@ -1755,19 +1755,19 @@
                               {isTogglingActive ? <div className="loader"></div> : "Начать смену"}
                             </button>
                           ) : selectedStatus === "active" ? (
-                            <button onClick={() => { setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
+                            <button onClick={() => { setModalStatus(selectedStatus === "active" ? "" : selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
                               {isTogglingActive ? <div className="loader"></div> : "Вы активны"}
                             </button>
                           ) : selectedStatus === "break" ? (
-                            <button onClick={() => { setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
+                            <button onClick={() => { setModalStatus(selectedStatus === "active" ? "" : selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
                               {isTogglingActive ? <div className="loader"></div> : "Не активен: Перерыв"}
                             </button>
                           ) : selectedStatus === "training" ? (
-                            <button onClick={() => { setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
+                            <button onClick={() => { setModalStatus(selectedStatus === "active" ? "" : selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
                               {isTogglingActive ? <div className="loader"></div> : "Не активен: Тренинг"}
                             </button>
                           ) : selectedStatus === "tech" ? (
-                            <button onClick={() => { setModalStatus(selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
+                            <button onClick={() => { setModalStatus(selectedStatus === "active" ? "" : selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
                               {isTogglingActive ? <div className="loader"></div> : "Не активен: Тех. причина"}
                             </button>
                           ) : null}
