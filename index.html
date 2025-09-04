@@ -1842,6 +1842,7 @@
                             value={modalStatus}
                             onChange={(e) => setModalStatus(e.target.value)}
                           >
+                            <option value="" disabled>-- Выберите статус --</option>
                             {selectedStatus !== "active" && (
                               <option value="active">Подключиться</option>
                             )}
@@ -1853,10 +1854,13 @@
                           <div className="modal-buttons">
                             <button
                               onClick={() => {
-                                setSelectedStatus(modalStatus);
-                                toggleActive(modalStatus);
-                                setShowStatusModal(false);
+                                if (modalStatus) {
+                                  setSelectedStatus(modalStatus);
+                                  toggleActive(modalStatus);
+                                  setShowStatusModal(false);
+                                }
                               }}
+                              disabled={!modalStatus} // кнопка неактивна, пока не выбран статус
                             >
                               Сохранить
                             </button>
