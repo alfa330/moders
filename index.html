@@ -1501,7 +1501,8 @@
                 break: "#ff9800",
                 tech: "#9c27b0",
                 training: "#2196f3",
-                inactive: "#f44336"
+                inactive: "#f44336",
+                iesigning: "#5195f5"
               };
             
               return (
@@ -1568,6 +1569,7 @@
                             if (status === "break") label = "Перерыв";
                             if (status === "tech") label = "Тех. причина";
                             if (status === "training") label = "Тренинг";
+                            if (status === "iesigning") label = "Подписание";
             
                             // === особая обработка для inactive ===
                             if (status === "inactive") {
@@ -1770,6 +1772,10 @@
                             <button onClick={() => { setModalStatus(selectedStatus === "active" ? "" : selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
                               {isTogglingActive ? <div className="loader"></div> : "Не активен: Тех. причина"}
                             </button>
+                          ) : selectedStatus === "iesigning" ? (
+                            <button onClick={() => { setModalStatus(selectedStatus === "active" ? "" : selectedStatus); setShowStatusModal(true)}} disabled={isTogglingActive}>
+                              {isTogglingActive ? <div className="loader"></div> : "Не активен: Подписание"}
+                            </button>
                           ) : null}
                         </div>
                       )}
@@ -1849,6 +1855,7 @@
                             <option value="break">Перерыв</option>
                             <option value="tech">Тех. причина</option>
                             <option value="training">Тренинг</option>
+                            <option value="iesigning">Подписание</option>
                             <option value="inactive">Завершить смену</option>
                           </select>
                           <div className="modal-buttons">
