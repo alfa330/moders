@@ -1150,7 +1150,7 @@
             };
 
             const addButtons = async () => {
-                const from = parseInt(fromValue);
+                let from = parseInt(fromValue);
                 if (isNaN(from)) {
                     showNotification('Некорректные значения!');
                     return;
