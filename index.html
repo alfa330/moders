@@ -1155,24 +1155,29 @@
                     showNotification('Некорректные значения!');
                     return;
                 }
-                // Получаем актуальных операторов перед расчетами
+
                 await fetchActiveOperators(apiKey);
-                // Ждем обновления activeOperators через setActiveOperators, поэтому используем setTimeout для вычислений
+
                 setTimeout(() => {
                     const userDirId = userData?.direction_id;
                     const userName = userData?.name;
+
                     const activeOpNames = activeOperators
                         .filter(a => a.direction_id === userDirId)
                         .map(a => a.name);
-                    const step = activeOpNames.length || 1;
+
+                    const stepValue = activeOpNames.length || 1;
                     const sortedNames = [...activeOpNames].sort();
                     const uIndex = sortedNames.indexOf(userName);
-                    let to = from + 100;
-                    to = to + ((uIndex - (to % step) + step) % step);
+
+                    let toValue = from + 100;
+                    toValue = toValue + ((uIndex - (toValue % stepValue)) % stepValue);
+
                     const newBtns = [];
-                    for (let i = from; i <= to; i += step) {
+                    for (let i = from; i <= toValue; i += stepValue) {
                         newBtns.push({ id: `${Date.now()}-${i}`, num: i });
                     }
+
                     setButtons(prev => ({ ...prev, pending: [...prev.pending, ...newBtns] }));
                     showNotification('Кнопки добавлены!');
                 }, 200);
