@@ -1179,7 +1179,7 @@
                     const uIndex = sortedNames.indexOf(userName);
 
                     let toValue = from + 100;
-                    from = from + ((uIndex - (from % stepValue)) % stepValue);
+                    from = from + ((uIndex - (from % stepValue) + stepValue) % stepValue);
 
                     const newBtns = [];
                     for (let i = from; i <= toValue; i += stepValue) {
