@@ -1161,10 +1161,9 @@
                 setTimeout(() => {
                     const userDirId = userData?.direction_id;
                     const userName = userData?.name;
-
-                    const activeOpNames = activeOperators
-                        .filter(a => a.direction_id === userDirId)
-                        .map(a => a.name);
+                    console.log("User Direction ID:", userDirId);
+                    console.log("User Name:", userName);
+                    const activeOpNames = activeOperators.filter(a => a.direction_id === userDirId).map(a => a.name);
                     console.log("Active Operators in same direction:", activeOpNames);
                     const stepValue = activeOpNames.length || 1;
                     const sortedNames = [...activeOpNames].sort();
@@ -1172,8 +1171,8 @@
                     const uIndex = sortedNames.indexOf(userName);
                     console.log("Current User Index:", uIndex);
                     let toValue = from + 100;
-                    toValue = toValue + ((uIndex - (toValue % stepValue)) % stepValue);
-                    console.log("Calculated 'to' Value:", toValue);
+                    from = from + ((uIndex - (from % stepValue)) % stepValue);
+                    console.log(`Adding buttons from ${from} to ${toValue} with step ${stepValue}`);
                     const newBtns = [];
                     for (let i = from; i <= toValue; i += stepValue) {
                         newBtns.push({ id: `${Date.now()}-${i}`, num: i });
