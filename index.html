@@ -1165,19 +1165,20 @@
                     const activeOpNames = activeOperators
                         .filter(a => a.direction_id === userDirId)
                         .map(a => a.name);
-
+                    console.log("Active Operators in same direction:", activeOpNames);
                     const stepValue = activeOpNames.length || 1;
                     const sortedNames = [...activeOpNames].sort();
+                    console.log("Sorted Active Operators:", sortedNames);
                     const uIndex = sortedNames.indexOf(userName);
-
+                    console.log("Current User Index:", uIndex);
                     let toValue = from + 100;
                     toValue = toValue + ((uIndex - (toValue % stepValue)) % stepValue);
-
+                    console.log("Calculated 'to' Value:", toValue);
                     const newBtns = [];
                     for (let i = from; i <= toValue; i += stepValue) {
                         newBtns.push({ id: `${Date.now()}-${i}`, num: i });
                     }
-
+                    console.log("New Buttons to Add:", newBtns);
                     setButtons(prev => ({ ...prev, pending: [...prev.pending, ...newBtns] }));
                     showNotification('Кнопки добавлены!');
                 }, 200);
