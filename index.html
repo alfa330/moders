@@ -1159,25 +1159,33 @@
                 await fetchActiveOperators(apiKey);
 
                 setTimeout(() => {
-                    const userDirId = userData?.direction_id;
                     const userName = userData?.name;
-                    console.log("User Direction ID:", userDirId);
-                    console.log("User Name:", userName);
+
+                    const currentOp = activeOperators.find(op => op.id === userData.id);
+            
+                    if (!currentOp) {
+                        showNotification('Переведите статус в Активный что бы делить!');
+                        return;
+                    }
+                    
+                    // берём его направление
+                    const userDirId = currentOp.direction_id;
+
                     const activeOpNames = activeOperators.filter(a => a.direction_id === userDirId).map(a => a.name);
-                    console.log("Active Operators in same direction:", activeOpNames);
+
                     const stepValue = activeOpNames.length || 1;
                     const sortedNames = [...activeOpNames].sort();
-                    console.log("Sorted Active Operators:", sortedNames);
+
                     const uIndex = sortedNames.indexOf(userName);
-                    console.log("Current User Index:", uIndex);
+
                     let toValue = from + 100;
                     from = from + ((uIndex - (from % stepValue)) % stepValue);
-                    console.log(`Adding buttons from ${from} to ${toValue} with step ${stepValue}`);
+
                     const newBtns = [];
                     for (let i = from; i <= toValue; i += stepValue) {
                         newBtns.push({ id: `${Date.now()}-${i}`, num: i });
                     }
-                    console.log("New Buttons to Add:", newBtns);
+
                     setButtons(prev => ({ ...prev, pending: [...prev.pending, ...newBtns] }));
                     showNotification('Кнопки добавлены!');
                 }, 200);
