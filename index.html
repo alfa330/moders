@@ -80,17 +80,15 @@
         }
 
         .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
-            padding: 15px;
-            background: var(--column-bg);
-            border-radius: 15px;
-            box-shadow: var(--shadow-light);
-            position: sticky;
-            top: 10px;
-            z-index: 100;
+            border-radius: 8px;      /* было 15px */
+            box-shadow: 0 2px 8px rgba(244,196,206,0.12); /* мягче тень */
+            border: 1px solid var(--border-color);
+            justify-content: center; /* центрируем содержимое */
+            gap: 8px;                /* чуть меньше отступы */
+        }
+
+        .controls button {
+            margin: 0 4px;
         }
 
         input {
@@ -1774,7 +1772,7 @@
                     <div className="container">
                         {currentTab === 'tasks' ? (
                             <>
-                                <div className="controls flex items-center gap-2 p-2 bg-gray-50 rounded-lg shadow-sm">
+                                <div className="controls" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%" }}>
                                         <button 
                                             onClick={toggleTheme} 
