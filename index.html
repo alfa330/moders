@@ -1757,13 +1757,42 @@
                     <div className="container">
                         {currentTab === 'tasks' ? (
                             <>
-                                <div className="controls">
-                                    <button onClick={toggleTheme} aria-label="Переключить тему">
-                                        <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                                <div className="controls flex items-center gap-3 p-3 bg-gray-50 rounded-xl shadow-sm">
+                                <button 
+                                    onClick={toggleTheme} 
+                                    aria-label="Переключить тему"
+                                    className="p-2 rounded-lg hover:bg-gray-200 transition"
+                                >
+                                    <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                                </button>
+
+                                {/* Инпут */}
+                                <input
+                                    type="number"
+                                    value={fromValue}
+                                    onChange={(e) => setFromValue(e.target.value)}
+                                    placeholder="С какой кнопки"
+                                    className="w-40 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+
+                                {/* Кнопки */}
+                                <div className="flex gap-2">
+                                    <button
+                                    onClick={addButtons}
+                                    aria-label="Добавить кнопки"
+                                    className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
+                                    >
+                                    Добавить
                                     </button>
-                                    <input type="number" value={fromValue} onChange={(e) => setFromValue(e.target.value)} placeholder="С какой кнопки" />
-                                    <button onClick={addButtons} aria-label="Добавить кнопки">Добавить кнопки</button>
-                                    <button onClick={openSelectedInTabs} aria-label="Открыть выбранные">Открыть выбранные</button>
+
+                                    <button
+                                    onClick={openSelectedInTabs}
+                                    aria-label="Открыть выбранные"
+                                    className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition"
+                                    >
+                                    Открыть выбранные
+                                    </button>
+                                </div>
                                 </div>
                                 <div className="columns">
                                     {['pending', 'completed', 'deferred'].map(column => (
