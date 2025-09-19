@@ -1859,7 +1859,10 @@
                                         >
                                             <h2>{column === 'pending' ? 'Выполняемые' : column === 'completed' ? 'Выполненные' : 'Отложенные'}</h2>
                                             <div className="list" id={`${column}List`}>
-                                                {buttons[column].map(btn => renderButton(btn, column))}
+                                                {buttons[column]
+                                                    .slice()
+                                                    .sort((a, b) => a.num - b.num)
+                                                    .map(btn => renderButton(btn, column))}
                                             </div>
                                             <div className="counter" id={`${column}Count`}>
                                                 {buttons[column].length}
