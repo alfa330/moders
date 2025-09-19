@@ -83,17 +83,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(244,196,206,0.10);
-            border: 1px solid var(--border-color);
+            gap: 14px;
+            padding: 10px 14px;
+            border-radius: 22px;
+            box-shadow: 0 2px 8px rgba(244, 196, 206, 0.10);
+            border: 0px solid var(--border-color);
             background: var(--column-bg);
             min-height: unset;
-            margin-top: 10px;
-            margin-bottom: 0;
+            margin-top: 14px;
+            margin-bottom: -16px;
             width: 100%;
-            max-width: 700px;
+            max-width: 570px;
+            margin-left: 13px;
         }
 
         .controls button,
@@ -1827,22 +1828,23 @@
                                         type="number" 
                                         value={fromValue} 
                                         onChange={(e) => setFromValue(e.target.value)} 
-                                        placeholder="С какой тикет"
+                                        placeholder="С какого тикета"
                                         className="controls-input"
                                     />
                                     <button 
                                         onClick={addButtons} 
-                                        aria-label="Добавить тикет"
+                                        aria-label="Добавить тикеты"
                                         className="controls-btn"
                                     >
-                                        Добавить тикет
+                                        Добавить тикеты
                                     </button>
                                     <button 
                                         onClick={openSelectedInTabs} 
-                                        aria-label="Открыть тикет"
+                                        aria-label="Открыть выбранные"
                                         className="controls-btn"
+                                        disabled={selectedButtons.length === 0}
                                     >
-                                        Открыть тикет
+                                        Открыть выбранные
                                     </button>
                                 </div>
                                 <div className="columns">
