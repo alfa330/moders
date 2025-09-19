@@ -1774,13 +1774,14 @@
                     <div className="container">
                         {currentTab === 'tasks' ? (
                             <>
-                                <div className="controls flex items-center gap-3 p-3 bg-gray-50 rounded-xl shadow-sm">
-                                <button 
-                                    onClick={toggleTheme} 
+                               <div className="controls flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded-lg shadow">
+                                {/* Тема */}
+                                <button
+                                    onClick={toggleTheme}
                                     aria-label="Переключить тему"
-                                    className="p-2 rounded-lg hover:bg-gray-200 transition"
+                                    className="p-2 rounded-md hover:bg-gray-200 transition"
                                 >
-                                    <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                                    <span>{theme === "dark" ? "☀️" : "🌙"}</span>
                                 </button>
 
                                 {/* Инпут */}
@@ -1789,7 +1790,7 @@
                                     value={fromValue}
                                     onChange={(e) => setFromValue(e.target.value)}
                                     placeholder="С какого тикета"
-                                    className="w-40 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-36 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-400"
                                 />
 
                                 {/* Кнопки */}
@@ -1797,7 +1798,7 @@
                                     <button
                                     onClick={addButtons}
                                     aria-label="Добавить тикеты"
-                                    className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
+                                    className="px-3 py-2 text-sm rounded-md bg-blue-500 text-white hover:bg-blue-600 transition"
                                     >
                                     Добавить
                                     </button>
@@ -1805,9 +1806,9 @@
                                     <button
                                     onClick={openSelectedInTabs}
                                     aria-label="Открыть выбранные"
-                                    className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition"
+                                    className="px-3 py-2 text-sm rounded-md bg-green-500 text-white hover:bg-green-600 transition"
                                     >
-                                    Открыть выбранные
+                                    Открыть
                                     </button>
                                 </div>
                                 </div>
