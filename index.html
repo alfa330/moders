@@ -1256,14 +1256,51 @@
                     showNotification('Введите корректный номер!');
                     return;
                 }
-                const exists = Object.values(buttons).flat().some(b => b.num === num);
-                if (exists) {
-                    showNotification('Тикет с таким номером уже существует!');
+
+                // Ищем в текущих кнопках (в любых колонках) по num
+                const allButtons = Object.values(buttons).flat();
+                const existing = allButtons.find(b => b.num === num);
+
+                if (existing) {
+                    // Если уже в отложенных — просто уведомляем и, если нужно, перезапускаем таймер
+                    const isInDeferred = buttons.deferred.some(b => b.id === existing.id);
+                    if (isInDeferred) {
+                        // Если есть таймер — ничего не делаем, или можно перезапустить
+                        showNotification('Тикет уже в отложенных — перемещен повторно.');
+                        // Если вы хотите перезапускать таймер при повторном добавлении — раскомментируйте:
+                        // if (timersRef.current.has(existing.id)) {
+                        //     clearInterval(timersRef.current.get(existing.id));
+                        //     timersRef.current.delete(existing.id);
+                        // }
+                        // startTimer(existing.id, 900);
+                        setShowAddButtonModal(false);
+                        setNewButtonNumber('');
+                        return;
+                    }
+
+                    // Переместить: удалить из других колонок и добавить в deferred (с тем же id)
+                    setButtons(prev => {
+                        const next = { ...prev };
+                        Object.keys(next).forEach(col => {
+                            next[col] = next[col].filter(b => b.id !== existing.id);
+                        });
+                        next.deferred = [...next.deferred, existing];
+                        return next;
+                    });
+
+                    // Запускаем таймер для перемещённого тикета (15 минут)
+                    startTimer(existing.id, 900);
+
+                    showNotification('Тикет перемещён в Отложенные!');
+                    setShowAddButtonModal(false);
+                    setNewButtonNumber('');
                     return;
                 }
+
+                // Если не найден — создаём новый и добавляем в deferred
                 const newBtn = { id: `${Date.now()}-${num}`, num };
                 setButtons(prev => ({ ...prev, deferred: [...prev.deferred, newBtn] }));
-                
+
                 // Запускаем таймер сразу (15 минут = 900 сек)
                 startTimer(newBtn.id, 900);
 
@@ -1272,6 +1309,90 @@
                 setNewButtonNumber('');
             };
 
+            const exportDeferred = () => {
+                const deferred = buttons.deferred.map(b => ({ id: b.id, num: b.num }));
+                const json = JSON.stringify({ deferred }, null, 0); // компактный текст для обмена
+                // Копируем в буфер обмена
+                try {
+                    navigator.clipboard.writeText(json);
+                    showNotification('Отложенные тикеты скопированы в буфер!');
+                } catch (err) {
+                    showNotification('Не удалось скопировать в буфер.');
+                }
+
+                // Предложить скачать .json
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `deferred_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            };
+
+            // Импорт из JSON-строки (строка должна быть формата {"deferred":[{"id":"...","num":123}, ...]})
+            const importDeferredFromText = (text) => {
+                try {
+                    const parsed = JSON.parse(text);
+                    if (!parsed || !Array.isArray(parsed.deferred)) {
+                        showNotification('Неверный формат JSON. Ожидается { "deferred": [ ... ] }');
+                        return;
+                    }
+
+                    // Преобразуем — если тикет существует в других колонках, перемещаем; иначе добавляем новый
+                    setButtons(prev => {
+                        const next = { ...prev };
+                        parsed.deferred.forEach(item => {
+                            // Проверяем на наличие по num
+                            const exists = Object.values(next).flat().find(b => b.num === item.num);
+                            if (exists) {
+                                // Удаляем из всех колонок и добавляем в deferred (с существующим id если он есть)
+                                Object.keys(next).forEach(col => {
+                                    next[col] = next[col].filter(b => b.num !== item.num);
+                                });
+                                const idToUse = exists.id || item.id || `${Date.now()}-${item.num}`;
+                                next.deferred.push({ id: idToUse, num: item.num });
+                            } else {
+                                // Добавляем новый
+                                const newId = item.id || `${Date.now()}-${item.num}-${Math.floor(Math.random()*1000)}`;
+                                next.deferred.push({ id: newId, num: item.num });
+                            }
+                        });
+                        return next;
+                    });
+
+                    // Для всех добавленных элементов — стартуем таймеры (если их нет)
+                    setTimeout(() => {
+                        parsed.deferred.forEach(item => {
+                            // Найдем id в текущем состоянии (в localStorage оно ещё не обновлено, поэтому ищем в state через селектор)
+                            const all = Object.values(buttons).flat();
+                            const added = all.find(b => b.num === item.num);
+                            const id = added ? added.id : (item.id || `${Date.now()}-${item.num}`);
+                            if (!localStorage.getItem(`timer_${id}`)) {
+                                startTimer(id, 900);
+                            }
+                        });
+                    }, 200);
+
+                    showNotification('Отложенные импортированы!');
+                } catch (err) {
+                    console.error(err);
+                    showNotification('Ошибка парсинга JSON');
+                }
+            };
+
+            // Обработчик загрузки файла .json (input type="file")
+            const handleImportFile = (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    importDeferredFromText(reader.result);
+                };
+                reader.readAsText(file);
+            };
 
             const showNotification = (msg) => {
                 setNotification({ show: true, message: msg });
@@ -1961,19 +2082,61 @@
                     {showAddButtonModal && (
                         <div className="modal">
                             <div className="modal-content">
-                                <h3>Добавить тикет</h3>
+                            <h3>Отложенные — Управление</h3>
+
+                            {/* Вкладка: Добавить / Перенести */}
+                            <div style={{ marginBottom: 12 }}>
                                 <input
-                                    type="number"
-                                    className="number-input"
-                                    value={newButtonNumber}
-                                    onChange={(e) => setNewButtonNumber(e.target.value)}
-                                    placeholder="Номер тикета"
-                                    min="1"
+                                type="number"
+                                className="number-input"
+                                value={newButtonNumber}
+                                onChange={(e) => setNewButtonNumber(e.target.value)}
+                                placeholder="Номер тикета"
+                                min="1"
                                 />
-                                <div className="modal-buttons">
-                                    <button onClick={addSingleDeferredButton}>Добавить</button>
-                                    <button onClick={() => setShowAddButtonModal(false)}>Отмена</button>
+                                <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                                <button onClick={addSingleDeferredButton}>Добавить / Переместить</button>
+                                <button onClick={() => { setNewButtonNumber(''); setShowAddButtonModal(false); }}>Закрыть</button>
                                 </div>
+                            </div>
+
+                            <hr style={{ margin: "12px 0", border: "none", borderTop: "1px solid var(--border-color)" }} />
+
+                            {/* Вкладка: Экспорт */}
+                            <div style={{ marginBottom: 12 }}>
+                                <p style={{ marginBottom: 8 }}>Экспорт отложенных тикетов</p>
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                <button onClick={exportDeferred}>Копировать текст</button>
+                                <button onClick={exportDeferred}>Скачать .json</button>
+                                </div>
+                            </div>
+
+                            <hr style={{ margin: "12px 0", border: "none", borderTop: "1px solid var(--border-color)" }} />
+
+                            {/* Вкладка: Импорт */}
+                            <div>
+                                <p style={{ marginBottom: 8 }}>Импорт: вставьте JSON или загрузите .json файл</p>
+                                <textarea
+                                className="result-textarea"
+                                placeholder='{"deferred":[{"id":"...","num":123}, {"num":456}] }'
+                                onChange={(e) => {/* временно храним текст в newButtonNumber? Лучше добавить state importText */}}
+                                id="importDeferredTextarea"
+                                />
+                                <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                                <button onClick={() => {
+                                    const txt = document.getElementById('importDeferredTextarea').value;
+                                    importDeferredFromText(txt);
+                                    // Очистка поля
+                                    document.getElementById('importDeferredTextarea').value = '';
+                                    setShowAddButtonModal(false);
+                                }}>Импортировать из текста</button>
+
+                                <label style={{ display: "inline-block", padding: "8px 12px", borderRadius: "8px", background: "var(--button-bg)", cursor: "pointer" }}>
+                                    Загрузить .json
+                                    <input type="file" accept="application/json" style={{ display: "none" }} onChange={handleImportFile} />
+                                </label>
+                                </div>
+                            </div>
                             </div>
                         </div>
                     )}
