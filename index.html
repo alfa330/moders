@@ -261,6 +261,31 @@
             transition: background-color 0.3s ease;
         }
 
+        .small-btn {
+            padding: 8px 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            background: var(--button-bg);
+            color: var(--text-color);
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .small-btn:hover { transform: translateY(-2px); }
+        .small-btn:active { transform: scale(0.98); }
+        .small-btn.active {
+            background: var(--button-hover);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+
+        /* чуть компактнее textarea в модалке */
+        .modal-content .result-textarea {
+            height: 120px;
+            font-size: 14px;
+            padding: 8px;
+        }
+
         button .edit-time-btn:hover {
             background-color: #ff6b6b;
         }
@@ -866,8 +891,19 @@
             const [operators, setOperators] = useState([]);  // Список операторов для 'sv'
             const [selectedOperator, setSelectedOperator] = useState(null);  // Выбранный оператор
             const [isRefreshing, setIsRefreshing] = useState(false);
+            const [modalTab, setModalTab] = useState('add');   // 'add' | 'export' | 'import'
+            const [importText, setImportText] = useState('');
 
-            
+            const getDeferredJson = () => {
+                const deferred = buttons.deferred.map(b => {
+                    const id = b.id;
+                    const endTime = parseInt(localStorage.getItem(`timer_${id}`)) || null;
+                    const restartCount = parseInt(localStorage.getItem(`restartCount_${id}`) || '0');
+                    return { id, num: b.num, endTime, restartCount };
+                });
+                return JSON.stringify({ deferred }, null, 2); // pretty for preview
+            };
+
             const fetchOperators = async (apiKey, userId) => {
                 try {
                     const today = new Date().toISOString();
@@ -1310,80 +1346,130 @@
             };
 
             const exportDeferred = () => {
-                const deferred = buttons.deferred.map(b => ({ id: b.id, num: b.num }));
-                const json = JSON.stringify({ deferred }, null, 0); // компактный текст для обмена
-                // Копируем в буфер обмена
-                try {
-                    navigator.clipboard.writeText(json);
-                    showNotification('Отложенные тикеты скопированы в буфер!');
-                } catch (err) {
-                    showNotification('Не удалось скопировать в буфер.');
+                const deferred = buttons.deferred.map(b => {
+                    const id = b.id;
+                    const endTime = parseInt(localStorage.getItem(`timer_${id}`)) || null; // ms or null
+                    const restartCount = parseInt(localStorage.getItem(`restartCount_${id}`) || '0');
+                    return { id, num: b.num, endTime, restartCount };
+                });
+
+                const payload = JSON.stringify({ deferred }, null, 0); // компактный формат для обмена
+
+                // Копируем в буфер обмена (если возможно)
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(payload).then(() => {
+                        showNotification('Отложенные скопированы в буфер!');
+                    }).catch(() => {
+                        showNotification('Не удалось скопировать в буфер.');
+                    });
+                } else {
+                    showNotification('Копирование в буфер недоступно в этом браузере.');
                 }
 
-                // Предложить скачать .json
-                const blob = new Blob([json], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `deferred_${new Date().toISOString().slice(0,10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(url);
+                // Также предлагаем скачать .json
+                try {
+                    const blob = new Blob([payload], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `deferred_${new Date().toISOString().slice(0,10)}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    // Игнорируем ошибки скачивания
+                    console.error(err);
+                }
             };
 
-            // Импорт из JSON-строки (строка должна быть формата {"deferred":[{"id":"...","num":123}, ...]})
+            // --- Импорт из текста (JSON) и восстановление таймеров/перезапусков ---
             const importDeferredFromText = (text) => {
                 try {
                     const parsed = JSON.parse(text);
                     if (!parsed || !Array.isArray(parsed.deferred)) {
-                        showNotification('Неверный формат JSON. Ожидается { "deferred": [ ... ] }');
+                        showNotification('Неверный формат. Ожидается {"deferred":[{...}, ...]}');
                         return;
                     }
 
-                    // Преобразуем — если тикет существует в других колонках, перемещаем; иначе добавляем новый
+                    // Список действий по старту таймеров после обновления состояния
+                    const startActions = [];
+
                     setButtons(prev => {
                         const next = { ...prev };
+                        // Для корректной работы сначала убедимся, что колонки существуют
+                        if (!next.pending) next.pending = [];
+                        if (!next.completed) next.completed = [];
+                        if (!next.deferred) next.deferred = [];
+
                         parsed.deferred.forEach(item => {
-                            // Проверяем на наличие по num
-                            const exists = Object.values(next).flat().find(b => b.num === item.num);
-                            if (exists) {
-                                // Удаляем из всех колонок и добавляем в deferred (с существующим id если он есть)
+                            const num = parseInt(item.num);
+                            if (isNaN(num)) return; // игнорируем некорректные номера
+
+                            // Находим существующий тикет по num (в любой колонке)
+                            const existing = Object.values(next).flat().find(b => b.num === num);
+
+                            // Если существующий найден — будем переиспользовать его id
+                            let idToUse;
+                            if (existing) {
+                                // Удаляем из всех колонок
                                 Object.keys(next).forEach(col => {
-                                    next[col] = next[col].filter(b => b.num !== item.num);
+                                    next[col] = next[col].filter(b => b.num !== num);
                                 });
-                                const idToUse = exists.id || item.id || `${Date.now()}-${item.num}`;
-                                next.deferred.push({ id: idToUse, num: item.num });
+                                idToUse = existing.id;
                             } else {
-                                // Добавляем новый
-                                const newId = item.id || `${Date.now()}-${item.num}-${Math.floor(Math.random()*1000)}`;
-                                next.deferred.push({ id: newId, num: item.num });
+                                // Возьмём id из импорта, либо сгенерируем новый
+                                idToUse = item.id || `${Date.now()}-${num}-${Math.floor(Math.random()*1000)}`;
                             }
+
+                            // Добавляем в deferred (если уже не добавлен)
+                            if (!next.deferred.some(b => b.num === num)) {
+                                next.deferred.push({ id: idToUse, num });
+                            }
+
+                            // Сохраняем restartCount (если есть) — запомним для выполнения после setButtons
+                            const rc = typeof item.restartCount !== 'undefined' ? parseInt(item.restartCount) || 0 : 0;
+                            const endTime = item.endTime ? parseInt(item.endTime) : null;
+
+                            startActions.push({ id: idToUse, endTime, restartCount: rc });
                         });
+
                         return next;
                     });
 
-                    // Для всех добавленных элементов — стартуем таймеры (если их нет)
+                    // После обновления state — запустить (восстановить) таймеры и restartCount
                     setTimeout(() => {
-                        parsed.deferred.forEach(item => {
-                            // Найдем id в текущем состоянии (в localStorage оно ещё не обновлено, поэтому ищем в state через селектор)
-                            const all = Object.values(buttons).flat();
-                            const added = all.find(b => b.num === item.num);
-                            const id = added ? added.id : (item.id || `${Date.now()}-${item.num}`);
-                            if (!localStorage.getItem(`timer_${id}`)) {
-                                startTimer(id, 900);
+                        startActions.forEach(act => {
+                            const id = act.id;
+                            // Восстановим restartCount в localStorage
+                            if (typeof act.restartCount !== 'undefined') {
+                                localStorage.setItem(`restartCount_${id}`, String(act.restartCount));
+                            }
+
+                            if (act.endTime && !isNaN(act.endTime)) {
+                                const remainingMs = parseInt(act.endTime) - Date.now();
+                                if (remainingMs > 0) {
+                                    // Установим endTime в localStorage (чтобы синхронно было видно) и запустим таймер с оставшимся временем
+                                    localStorage.setItem(`timer_${id}`, String(act.endTime));
+                                    // startTimer автоматически запишет timer_{id} заново и создаст интервал
+                                    startTimer(id, Math.ceil(remainingMs / 1000));
+                                } else {
+                                    // Время уже истекло — очистим записи
+                                    localStorage.removeItem(`timer_${id}`);
+                                    // не удаляем restartCount — пусть сохраняется при необходимости
+                                }
                             }
                         });
-                    }, 200);
+                    }, 150);
 
                     showNotification('Отложенные импортированы!');
                 } catch (err) {
                     console.error(err);
-                    showNotification('Ошибка парсинга JSON');
+                    showNotification('Ошибка парсинга JSON.');
                 }
             };
 
-            // Обработчик загрузки файла .json (input type="file")
+            // --- Обработчик загрузки .json файла ---
             const handleImportFile = (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -2080,63 +2166,116 @@
                         </div>
                     )}
                     {showAddButtonModal && (
-                        <div className="modal">
-                            <div className="modal-content">
-                            <h3>Отложенные — Управление</h3>
+                        <div className="modal" onClick={() => { setShowAddButtonModal(false); setModalTab('add'); }}>
+                            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+                            <h3 style={{ marginBottom: 12 }}>Отложенные — Управление</h3>
 
-                            {/* Вкладка: Добавить / Перенести */}
-                            <div style={{ marginBottom: 12 }}>
+                            {/* Tabs */}
+                            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                                <button
+                                className={`small-btn ${modalTab === 'add' ? 'active' : ''}`}
+                                onClick={() => setModalTab('add')}
+                                >Добавить</button>
+                                <button
+                                className={`small-btn ${modalTab === 'export' ? 'active' : ''}`}
+                                onClick={() => {
+                                    setModalTab('export');
+                                    // подготовим preview (если нужно можно делать это здесь)
+                                }}
+                                >Экспорт</button>
+                                <button
+                                className={`small-btn ${modalTab === 'import' ? 'active' : ''}`}
+                                onClick={() => setModalTab('import')}
+                                >Импорт</button>
+                                <div style={{ marginLeft: 'auto' }}>
+                                <button className="small-btn" onClick={() => { setShowAddButtonModal(false); setModalTab('add'); }}>Закрыть</button>
+                                </div>
+                            </div>
+
+                            {/* Tab content */}
+                            {modalTab === 'add' && (
+                                <div>
                                 <input
-                                type="number"
-                                className="number-input"
-                                value={newButtonNumber}
-                                onChange={(e) => setNewButtonNumber(e.target.value)}
-                                placeholder="Номер тикета"
-                                min="1"
+                                    type="number"
+                                    className="number-input"
+                                    value={newButtonNumber}
+                                    onChange={(e) => setNewButtonNumber(e.target.value)}
+                                    placeholder="Номер тикета"
+                                    min="1"
                                 />
-                                <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                                <button onClick={addSingleDeferredButton}>Добавить / Переместить</button>
-                                <button onClick={() => { setNewButtonNumber(''); setShowAddButtonModal(false); }}>Закрыть</button>
+                                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                                    <button className="small-btn" onClick={addSingleDeferredButton}>Добавить / Переместить</button>
+                                    <button className="small-btn" onClick={() => { setNewButtonNumber(''); }}>Очистить</button>
                                 </div>
-                            </div>
-
-                            <hr style={{ margin: "12px 0", border: "none", borderTop: "1px solid var(--border-color)" }} />
-
-                            {/* Вкладка: Экспорт */}
-                            <div style={{ marginBottom: 12 }}>
-                                <p style={{ marginBottom: 8 }}>Экспорт отложенных тикетов</p>
-                                <div style={{ display: "flex", gap: "8px" }}>
-                                <button onClick={exportDeferred}>Копировать текст</button>
-                                <button onClick={exportDeferred}>Скачать .json</button>
                                 </div>
-                            </div>
+                            )}
 
-                            <hr style={{ margin: "12px 0", border: "none", borderTop: "1px solid var(--border-color)" }} />
+                            {modalTab === 'export' && (
+                                <div>
+                                <p style={{ marginBottom: 8 }}>Экспорт отложенных (JSON)</p>
+                                <textarea
+                                    className="result-textarea"
+                                    value={getDeferredJson()}
+                                    readOnly
+                                    style={{ height: 140 }}
+                                />
+                                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                    <button
+                                    className="small-btn"
+                                    onClick={() => {
+                                        const payload = getDeferredJson();
+                                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                                        navigator.clipboard.writeText(payload).then(() => showNotification('JSON скопирован в буфер'));
+                                        } else {
+                                        showNotification('Копирование в буфер недоступно');
+                                        }
+                                    }}
+                                    >Копировать текст</button>
 
-                            {/* Вкладка: Импорт */}
-                            <div>
+                                    <button
+                                    className="small-btn"
+                                    onClick={() => {
+                                        exportDeferred(); // наша функция копирует и скачивает
+                                    }}
+                                    >Скачать .json</button>
+                                </div>
+                                </div>
+                            )}
+
+                            {modalTab === 'import' && (
+                                <div>
                                 <p style={{ marginBottom: 8 }}>Импорт: вставьте JSON или загрузите .json файл</p>
                                 <textarea
-                                className="result-textarea"
-                                placeholder='{"deferred":[{"id":"...","num":123}, {"num":456}] }'
-                                onChange={(e) => {/* временно храним текст в newButtonNumber? Лучше добавить state importText */}}
-                                id="importDeferredTextarea"
+                                    className="result-textarea"
+                                    placeholder='{"deferred":[{"id":"...","num":123,"endTime":..., "restartCount":1}, ...]}'
+                                    value={importText}
+                                    onChange={(e) => setImportText(e.target.value)}
+                                    style={{ height: 140 }}
                                 />
-                                <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                                <button onClick={() => {
-                                    const txt = document.getElementById('importDeferredTextarea').value;
-                                    importDeferredFromText(txt);
-                                    // Очистка поля
-                                    document.getElementById('importDeferredTextarea').value = '';
-                                    setShowAddButtonModal(false);
-                                }}>Импортировать из текста</button>
+                                <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                                    <button
+                                    className="small-btn"
+                                    onClick={() => {
+                                        if (!importText || importText.trim() === '') {
+                                        showNotification('Вставьте JSON для импорта');
+                                        return;
+                                        }
+                                        importDeferredFromText(importText);
+                                        setImportText('');
+                                        setShowAddButtonModal(false);
+                                    }}
+                                    >Импортировать из текста</button>
 
-                                <label style={{ display: "inline-block", padding: "8px 12px", borderRadius: "8px", background: "var(--button-bg)", cursor: "pointer" }}>
-                                    Загрузить .json
-                                    <input type="file" accept="application/json" style={{ display: "none" }} onChange={handleImportFile} />
-                                </label>
+                                    <label style={{ display: "inline-block" }}>
+                                    <input type="file" accept="application/json" style={{ display: "none" }} onChange={handleImportFile}/>
+                                    <button className="small-btn">Загрузить .json</button>
+                                    </label>
+
+                                    <button className="small-btn" onClick={() => setImportText('')}>Очистить</button>
                                 </div>
-                            </div>
+                                </div>
+                            )}
+
                             </div>
                         </div>
                     )}
