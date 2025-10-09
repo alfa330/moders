@@ -842,6 +842,12 @@
             }
         }
 
+        .icon-btn.active {
+        background: var(--button-hover);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        transform: translateY(-1px);
+        }
+
         .icon-btn, .icon-tab {
         width: 36px;
         height: 36px;
@@ -935,6 +941,14 @@
             const [isRefreshing, setIsRefreshing] = useState(false);
             const [modalTab, setModalTab] = useState('add');   // 'add' | 'export' | 'import'
             const [importText, setImportText] = useState('');
+            const [deferredNotifyMode, setDeferredNotifyMode] = useState(
+            localStorage.getItem('deferredNotifyMode') || 'open' // 'open' или 'notify'
+            );
+
+            useEffect(() => {
+            localStorage.setItem('deferredNotifyMode', deferredNotifyMode);
+            }, [deferredNotifyMode]);
+
 
             const getDeferredJson = () => {
                 const deferred = buttons.deferred.map(b => {
@@ -1528,49 +1542,94 @@
             };
 
             const startTimer = (id, duration) => {
-                const endTime = Date.now() + duration * 1000;
-                localStorage.setItem(`timer_${id}`, endTime);
-                updateTimerDisplay(id, duration);
-            
-                const interval = setInterval(() => {
-                    const remaining = Math.max(0, endTime - Date.now());
-                    updateTimerDisplay(id, remaining / 1000);
-            
-                    if (remaining <= 0) {
-                        clearInterval(interval);
-                        timersRef.current.delete(id);
-                        localStorage.removeItem(`timer_${id}`);
-            
-                        // === Уведомление при завершении таймера ===
-                        if ("Notification" in window) {
-                            if (Notification.permission === "granted") {
-                                new Notification("⏰ Таймер завершен!", {
-                                    body: "Задача " + id.split("-")[1] + " закончила отсчет.",
-                                    icon: "https://iili.io/3soEozX.png" // иконка (можно заменить)
-                                });
-                            } else if (Notification.permission !== "denied") {
-                                // Запросить разрешение и потом показать
-                                Notification.requestPermission().then(permission => {
-                                    if (permission === "granted") {
-                                        new Notification("⏰ Таймер завершен!", {
-                                            body: "Задача " + id.split("-")[1] + " закончила отсчет.",
-                                            icon: "https://iili.io/3soEozX.png"
-                                        });
-                                    } else {
-                                        showNotification("⏰ Таймер завершен!");
-                                    }
-                                });
-                            } else {
-                                showNotification("⏰ Таймер завершен!");
-                            }
+            const endTime = Date.now() + duration * 1000;
+            localStorage.setItem(`timer_${id}`, endTime);
+            updateTimerDisplay(id, duration);
+
+            const interval = setInterval(() => {
+                const remaining = Math.max(0, endTime - Date.now());
+                updateTimerDisplay(id, remaining / 1000);
+
+                if (remaining <= 0) {
+                clearInterval(interval);
+                timersRef.current.delete(id);
+                localStorage.removeItem(`timer_${id}`);
+
+                // получить номер тикета из id (например "deferred-123" -> "123")
+                const ticketNum = (typeof id === 'string' && id.includes('-')) ? id.split('-')[1] : id;
+                const url = `https://backend.yataxi.kz/admin/list-tickets/${ticketNum}`;
+
+                // прочитать режим из localStorage (по-умолчанию 'open')
+                const deferredNotifyMode = localStorage.getItem('deferredNotifyMode') || 'open';
+
+                // вспомогательные действия
+                const showDesktopNotif = (title, body) => {
+                    if ("Notification" in window) {
+                    if (Notification.permission === "granted") {
+                        const n = new Notification(title, { body, icon: "https://iili.io/3soEozX.png" });
+                        // если пользователь кликнет по нотификации — откроем тикет (полезно как fallback)
+                        n.onclick = () => {
+                        try { window.open(url, '_blank'); } catch (e) { /* ignore */ }
+                        window.focus?.();
+                        };
+                    } else if (Notification.permission !== "denied") {
+                        Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            const n = new Notification(title, { body, icon: "https://iili.io/3soEozX.png" });
+                            n.onclick = () => {
+                            try { window.open(url, '_blank'); } catch (e) { /* ignore */ }
+                            window.focus?.();
+                            };
                         } else {
-                            showNotification("⏰ Таймер завершен!");
+                            showNotification(body);
                         }
-                        setButtons(prev => ({ ...prev }));
+                        }).catch(() => {
+                        showNotification(body);
+                        });
+                    } else {
+                        // denied
+                        showNotification(body);
                     }
-                }, 1000);
-            
-                timersRef.current.set(id, interval);
+                    } else {
+                    showNotification(body);
+                    }
+                };
+
+                const tryOpenTicket = () => {
+                    try {
+                    const opened = window.open(url, '_blank');
+                    // если браузер заблокировал открытие (opened === null), дадим подсказку
+                    if (!opened) {
+                        // Показываем нотификацию (если возможно) с пояснением, и текстовую подсказку
+                        showDesktopNotif("⏰ Таймер завершён — откройте тикет", `Тикет ${ticketNum} готов: ${url}`);
+                        // Ещё локальная подсказка
+                        showNotification(`Открыть тикет вручную: ${url}`);
+                    } else {
+                        // успешно открыто
+                        showNotification(`Открыт тикет ${ticketNum}`);
+                    }
+                    } catch (e) {
+                    // если произошла ошибка — уведомим
+                    showDesktopNotif("⏰ Таймер завершён", `Тикет ${ticketNum} завершил отсчёт`);
+                    showNotification(`Не удалось автоматически открыть тикет ${ticketNum}`);
+                    }
+                };
+
+                // Поведение в зависимости от режима
+                if (deferredNotifyMode === 'open') {
+                    // попытаемся открыть; при блокировке покажем уведомление с URL
+                    tryOpenTicket();
+                } else {
+                    // только уведомление
+                    showDesktopNotif("⏰ Таймер завершён!", `Задача ${ticketNum} закончила отсчет.`);
+                }
+
+                // обновляем состояние кнопок/компонента (как было у вас)
+                setButtons(prev => ({ ...prev }));
+                }
+            }, 1000);
+
+            timersRef.current.set(id, interval);
             };
 
             const updateTimerDisplay = (id, seconds) => {
@@ -2211,6 +2270,29 @@
                     <div className="modal" onClick={() => { setShowAddButtonModal(false); setModalTab('add'); }}>
                         <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
                         <h3 style={{ marginBottom: 12 }}>Отложенные — Управление</h3>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 8 }}>
+                        <span style={{ fontSize: 13, opacity: 0.9 }}>Режим:</span>
+
+                        <button
+                            className={`icon-btn ${deferredNotifyMode === 'open' ? 'active' : ''}`}
+                            onClick={() => setDeferredNotifyMode('open')}
+                            aria-label="Открывать"
+                            title="Открывать — открывать тикет в новой вкладке"
+                        >
+                            <i className="fas fa-external-link-alt" />
+                            <span className="sr-only">Открывать</span>
+                        </button>
+
+                        <button
+                            className={`icon-btn ${deferredNotifyMode === 'notify' ? 'active' : ''}`}
+                            onClick={() => setDeferredNotifyMode('notify')}
+                            aria-label="Уведомлять"
+                            title="Уведомлять — только уведомление"
+                        >
+                            <i className="fas fa-bell" />
+                            <span className="sr-only">Уведомлять</span>
+                        </button>
+                        </div>
 
                         {/* Tabs (compact icon tabs) */}
                         <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
