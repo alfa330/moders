@@ -841,6 +841,48 @@
                 border-radius: 10px; /* Меньший радиус для компактности */
             }
         }
+
+        .icon-btn, .icon-tab {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: var(--button-bg);
+        color: var(--text-color);
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+        }
+        .icon-btn:hover, .icon-tab:hover {
+        transform: translateY(-2px);
+        background: var(--button-hover);
+        }
+        .icon-tab.active {
+        background: var(--button-hover);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+
+        /* уменьшим отступы внутри модалки под компактные кнопки */
+        .modal-content .compact-row { display:flex; gap:8px; align-items:center; }
+
+        /* visually-hidden for screen-readers */
+        .sr-only {
+        position: absolute !important;
+        width: 1px; height: 1px;
+        padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0,0,0,0);
+        white-space: nowrap; border: 0;
+        }
+
+        /* чуть более компактные textarea/inputs в модалке */
+        .modal-content .result-textarea { height: 120px; font-size: 14px; padding: 8px; }
+        .number-input { padding: 10px; font-size: 15px; }
+
     </style>
 </head>
 <body>
@@ -2166,118 +2208,186 @@
                         </div>
                     )}
                     {showAddButtonModal && (
-                        <div className="modal" onClick={() => { setShowAddButtonModal(false); setModalTab('add'); }}>
-                            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
-                            <h3 style={{ marginBottom: 12 }}>Отложенные — Управление</h3>
+                    <div className="modal" onClick={() => { setShowAddButtonModal(false); setModalTab('add'); }}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+                        <h3 style={{ marginBottom: 12 }}>Отложенные — Управление</h3>
 
-                            {/* Tabs */}
-                            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                                <button
-                                className={`small-btn ${modalTab === 'add' ? 'active' : ''}`}
-                                onClick={() => setModalTab('add')}
-                                >Добавить</button>
-                                <button
-                                className={`small-btn ${modalTab === 'export' ? 'active' : ''}`}
-                                onClick={() => {
-                                    setModalTab('export');
-                                    // подготовим preview (если нужно можно делать это здесь)
-                                }}
-                                >Экспорт</button>
-                                <button
-                                className={`small-btn ${modalTab === 'import' ? 'active' : ''}`}
-                                onClick={() => setModalTab('import')}
-                                >Импорт</button>
-                                <div style={{ marginLeft: 'auto' }}>
-                                <button className="small-btn" onClick={() => { setShowAddButtonModal(false); setModalTab('add'); }}>Закрыть</button>
-                                </div>
-                            </div>
+                        {/* Tabs (compact icon tabs) */}
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+                            <button
+                            className={`icon-tab ${modalTab === 'add' ? 'active' : ''}`}
+                            onClick={() => setModalTab('add')}
+                            aria-label="Добавить"
+                            title="Добавить"
+                            >
+                            <i className="fas fa-plus" />
+                            <span className="sr-only">Добавить</span>
+                            </button>
 
-                            {/* Tab content */}
-                            {modalTab === 'add' && (
-                                <div>
-                                <input
-                                    type="number"
-                                    className="number-input"
-                                    value={newButtonNumber}
-                                    onChange={(e) => setNewButtonNumber(e.target.value)}
-                                    placeholder="Номер тикета"
-                                    min="1"
-                                />
-                                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                                    <button className="small-btn" onClick={addSingleDeferredButton}>Добавить / Переместить</button>
-                                    <button className="small-btn" onClick={() => { setNewButtonNumber(''); }}>Очистить</button>
-                                </div>
-                                </div>
-                            )}
+                            <button
+                            className={`icon-tab ${modalTab === 'export' ? 'active' : ''}`}
+                            onClick={() => { setModalTab('export'); }}
+                            aria-label="Экспорт"
+                            title="Экспорт"
+                            >
+                            <i className="fas fa-file-export" />
+                            <span className="sr-only">Экспорт</span>
+                            </button>
 
-                            {modalTab === 'export' && (
-                                <div>
-                                <p style={{ marginBottom: 8 }}>Экспорт отложенных (JSON)</p>
-                                <textarea
-                                    className="result-textarea"
-                                    value={getDeferredJson()}
-                                    readOnly
-                                    style={{ height: 140 }}
-                                />
-                                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                                    <button
-                                    className="small-btn"
-                                    onClick={() => {
-                                        const payload = getDeferredJson();
-                                        if (navigator.clipboard && navigator.clipboard.writeText) {
-                                        navigator.clipboard.writeText(payload).then(() => showNotification('JSON скопирован в буфер'));
-                                        } else {
-                                        showNotification('Копирование в буфер недоступно');
-                                        }
-                                    }}
-                                    >Копировать текст</button>
+                            <button
+                            className={`icon-tab ${modalTab === 'import' ? 'active' : ''}`}
+                            onClick={() => setModalTab('import')}
+                            aria-label="Импорт"
+                            title="Импорт"
+                            >
+                            <i className="fas fa-file-import" />
+                            <span className="sr-only">Импорт</span>
+                            </button>
 
-                                    <button
-                                    className="small-btn"
-                                    onClick={() => {
-                                        exportDeferred(); // наша функция копирует и скачивает
-                                    }}
-                                    >Скачать .json</button>
-                                </div>
-                                </div>
-                            )}
-
-                            {modalTab === 'import' && (
-                                <div>
-                                <p style={{ marginBottom: 8 }}>Импорт: вставьте JSON или загрузите .json файл</p>
-                                <textarea
-                                    className="result-textarea"
-                                    placeholder='{"deferred":[{"id":"...","num":123,"endTime":..., "restartCount":1}, ...]}'
-                                    value={importText}
-                                    onChange={(e) => setImportText(e.target.value)}
-                                    style={{ height: 140 }}
-                                />
-                                <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
-                                    <button
-                                    className="small-btn"
-                                    onClick={() => {
-                                        if (!importText || importText.trim() === '') {
-                                        showNotification('Вставьте JSON для импорта');
-                                        return;
-                                        }
-                                        importDeferredFromText(importText);
-                                        setImportText('');
-                                        setShowAddButtonModal(false);
-                                    }}
-                                    >Импортировать из текста</button>
-
-                                    <label style={{ display: "inline-block" }}>
-                                    <input type="file" accept="application/json" style={{ display: "none" }} onChange={handleImportFile}/>
-                                    <button className="small-btn">Загрузить .json</button>
-                                    </label>
-
-                                    <button className="small-btn" onClick={() => setImportText('')}>Очистить</button>
-                                </div>
-                                </div>
-                            )}
-
+                            <div style={{ marginLeft: 'auto' }}>
+                            <button
+                                className="icon-btn"
+                                onClick={() => { setShowAddButtonModal(false); setModalTab('add'); }}
+                                aria-label="Закрыть"
+                                title="Закрыть"
+                            >
+                                <i className="fas fa-times" />
+                                <span className="sr-only">Закрыть</span>
+                            </button>
                             </div>
                         </div>
+
+                        {/* Tab content */}
+                        {modalTab === 'add' && (
+                            <div>
+                            <input
+                                type="number"
+                                className="number-input"
+                                value={newButtonNumber}
+                                onChange={(e) => setNewButtonNumber(e.target.value)}
+                                placeholder="Номер тикета"
+                                min="1"
+                            />
+                            <div className="compact-row" style={{ marginTop: 10 }}>
+                                <button
+                                className="icon-btn"
+                                onClick={addSingleDeferredButton}
+                                aria-label="Добавить / Переместить"
+                                title="Добавить / Переместить"
+                                >
+                                <i className="fas fa-exchange-alt" />
+                                <span className="sr-only">Добавить / Переместить</span>
+                                </button>
+
+                                <button
+                                className="icon-btn"
+                                onClick={() => { setNewButtonNumber(''); }}
+                                aria-label="Очистить"
+                                title="Очистить"
+                                >
+                                <i className="fas fa-eraser" />
+                                <span className="sr-only">Очистить</span>
+                                </button>
+                            </div>
+                            </div>
+                        )}
+
+                        {modalTab === 'export' && (
+                            <div>
+                            <p style={{ marginBottom: 8 }}>Экспорт отложенных (JSON)</p>
+                            <textarea
+                                className="result-textarea"
+                                value={getDeferredJson()}
+                                readOnly
+                                style={{ height: 140 }}
+                            />
+                            <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                                <button
+                                className="icon-btn"
+                                onClick={() => {
+                                    const payload = getDeferredJson();
+                                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    navigator.clipboard.writeText(payload).then(() => showNotification('JSON скопирован в буфер'));
+                                    } else {
+                                    showNotification('Копирование в буфер недоступно');
+                                    }
+                                }}
+                                aria-label="Копировать JSON"
+                                title="Копировать JSON"
+                                >
+                                <i className="fas fa-clipboard" />
+                                <span className="sr-only">Копировать JSON</span>
+                                </button>
+
+                                <button
+                                className="icon-btn"
+                                onClick={() => { exportDeferred(); }}
+                                aria-label="Скачать .json"
+                                title="Скачать .json"
+                                >
+                                <i className="fas fa-download" />
+                                <span className="sr-only">Скачать .json</span>
+                                </button>
+                            </div>
+                            </div>
+                        )}
+
+                        {modalTab === 'import' && (
+                            <div>
+                            <p style={{ marginBottom: 8 }}>Импорт: вставьте JSON или загрузите .json файл</p>
+                            <textarea
+                                className="result-textarea"
+                                placeholder='{"deferred":[{"id":"...","num":123,"endTime":..., "restartCount":1}, ...]}'
+                                value={importText}
+                                onChange={(e) => setImportText(e.target.value)}
+                                style={{ height: 140 }}
+                            />
+                            <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                                <button
+                                className="icon-btn"
+                                onClick={() => {
+                                    if (!importText || importText.trim() === '') {
+                                    showNotification('Вставьте JSON для импорта');
+                                    return;
+                                    }
+                                    importDeferredFromText(importText);
+                                    setImportText('');
+                                    setShowAddButtonModal(false);
+                                }}
+                                aria-label="Импортировать из текста"
+                                title="Импортировать из текста"
+                                >
+                                <i className="fas fa-paste" />
+                                <span className="sr-only">Импортировать из текста</span>
+                                </button>
+
+                                <label style={{ display: "inline-block" }}>
+                                <input type="file" accept="application/json" style={{ display: "none" }} onChange={handleImportFile}/>
+                                <button
+                                    className="icon-btn"
+                                    aria-label="Загрузить .json"
+                                    title="Загрузить .json"
+                                >
+                                    <i className="fas fa-upload" />
+                                    <span className="sr-only">Загрузить .json</span>
+                                </button>
+                                </label>
+
+                                <button
+                                className="icon-btn"
+                                onClick={() => setImportText('')}
+                                aria-label="Очистить"
+                                title="Очистить"
+                                >
+                                <i className="fas fa-eraser" />
+                                <span className="sr-only">Очистить</span>
+                                </button>
+                            </div>
+                            </div>
+                        )}
+
+                        </div>
+                    </div>
                     )}
                     {showStatusModal && (
                       <div className="modal">
