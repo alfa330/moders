@@ -864,6 +864,11 @@
         box-shadow: 0 2px 6px rgba(0,0,0,0.06);
         transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
         }
+
+        .icon-btn.cont{
+            width: 24px;
+            height: 24px;
+        }
         .icon-btn:hover, .icon-tab:hover {
         transform: translateY(-2px);
         background: var(--button-hover);
@@ -2178,7 +2183,7 @@
                                                     <>
                                                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 8 }}>
                                                     <button
-                                                        className={`icon-btn ${deferredNotifyMode === 'open' ? 'active' : ''}`}
+                                                        className={`icon-btn cont ${deferredNotifyMode === 'open' ? 'active' : ''}`}
                                                         onClick={() => setDeferredNotifyMode('open')}
                                                         aria-label="Открывать"
                                                         title="Открывать — открывать тикет в новой вкладке"
@@ -2188,7 +2193,7 @@
                                                     </button>
 
                                                     <button
-                                                        className={`icon-btn ${deferredNotifyMode === 'notify' ? 'active' : ''}`}
+                                                        className={`icon-btn cont ${deferredNotifyMode === 'notify' ? 'active' : ''}`}
                                                         onClick={() => setDeferredNotifyMode('notify')}
                                                         aria-label="Уведомлять"
                                                         title="Уведомлять — только уведомление"
