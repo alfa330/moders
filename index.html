@@ -2175,7 +2175,30 @@
                                             <div className="counter" id={`${column}Count`}>
                                                 {buttons[column].length}
                                                 {column === 'deferred' && (
+                                                    <>
+                                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 8 }}>
+                                                    <button
+                                                        className={`icon-btn ${deferredNotifyMode === 'open' ? 'active' : ''}`}
+                                                        onClick={() => setDeferredNotifyMode('open')}
+                                                        aria-label="Открывать"
+                                                        title="Открывать — открывать тикет в новой вкладке"
+                                                    >
+                                                        <i className="fas fa-external-link-alt" />
+                                                        <span className="sr-only">Открывать</span>
+                                                    </button>
+
+                                                    <button
+                                                        className={`icon-btn ${deferredNotifyMode === 'notify' ? 'active' : ''}`}
+                                                        onClick={() => setDeferredNotifyMode('notify')}
+                                                        aria-label="Уведомлять"
+                                                        title="Уведомлять — только уведомление"
+                                                    >
+                                                        <i className="fas fa-bell" />
+                                                        <span className="sr-only">Уведомлять</span>
+                                                    </button>
+                                                    </div>
                                                     <button className="add-button" onClick={() => setShowAddButtonModal(true)}>+</button>
+                                                    </>
                                                 )}
                                             </div>
                                         </div>
@@ -2270,29 +2293,6 @@
                     <div className="modal" onClick={() => { setShowAddButtonModal(false); setModalTab('add'); }}>
                         <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
                         <h3 style={{ marginBottom: 12 }}>Отложенные — Управление</h3>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 8 }}>
-                        <span style={{ fontSize: 13, opacity: 0.9 }}>Режим:</span>
-
-                        <button
-                            className={`icon-btn ${deferredNotifyMode === 'open' ? 'active' : ''}`}
-                            onClick={() => setDeferredNotifyMode('open')}
-                            aria-label="Открывать"
-                            title="Открывать — открывать тикет в новой вкладке"
-                        >
-                            <i className="fas fa-external-link-alt" />
-                            <span className="sr-only">Открывать</span>
-                        </button>
-
-                        <button
-                            className={`icon-btn ${deferredNotifyMode === 'notify' ? 'active' : ''}`}
-                            onClick={() => setDeferredNotifyMode('notify')}
-                            aria-label="Уведомлять"
-                            title="Уведомлять — только уведомление"
-                        >
-                            <i className="fas fa-bell" />
-                            <span className="sr-only">Уведомлять</span>
-                        </button>
-                        </div>
 
                         {/* Tabs (compact icon tabs) */}
                         <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
