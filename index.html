@@ -1864,7 +1864,7 @@
                         {column === 'deferred' && (
                             <>
                                 <div className="restart-badge">
-                                    {localStorage.getItem(`restartCount_${id}`) || 0}
+                                    {localStorage.getItem(`restartCount_${id}`)+1 || 1}
                                 </div>
                                 <div className="timer-container">
                                     {hasTimer && (
