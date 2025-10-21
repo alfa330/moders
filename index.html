@@ -164,6 +164,15 @@
             touch-action: manipulation;
         }
 
+        button .timer-restart {
+        font-size: 11px;
+        background: rgba(0,0,0,0.25);
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 8px;
+        margin-top: 3px;
+        }
+
         body.dark button {
             color: #fff;
         }
@@ -1552,6 +1561,11 @@
             const startTimer = (id, duration) => {
             const endTime = Date.now() + duration * 1000;
             localStorage.setItem(`timer_${id}`, endTime);
+            const restartEl = document.getElementById(`timer-restart-${id}`);
+                if (restartEl) {
+                const rc = parseInt(localStorage.getItem(`restartCount_${id}`) || '0');
+                restartEl.textContent = 'R' + rc;
+            }
             updateTimerDisplay(id, duration);
 
             const interval = setInterval(() => {
@@ -1678,6 +1692,8 @@
                 let restartCount = parseInt(localStorage.getItem(`restartCount_${id}`) || '0');
                 restartCount++;
                 localStorage.setItem(`restartCount_${id}`, restartCount);
+                const restartEl = document.getElementById(`timer-restart-${id}`);
+                if (restartEl) restartEl.textContent = 'R' + restartCount;
                 const duration = restartCount === 1 ? 1800 : 3600;
                 if (timersRef.current.has(id)) clearInterval(timersRef.current.get(id));
                 startTimer(id, duration);
@@ -1850,10 +1866,16 @@
                         {column === 'deferred' && (
                             <div className="timer-container">
                                 {hasTimer && (
-                                    <>
-                                        <div className="timer" id={`timer-${id}`}></div>
-                                        <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
-                                    </>
+                                <>
+                                    <div className="timer" id={`timer-${id}`}></div>
+
+                                    {/* новый элемент: показывает R# (кол-во перезапусков) */}
+                                    <div className="timer-restart" id={`timer-restart-${id}`}>
+                                    {'R' + (parseInt(localStorage.getItem(`restartCount_${id}`) || '0'))}
+                                    </div>
+
+                                    <button className="edit-time-btn" onClick={() => promptForCustomTime(id)}>🖋️</button>
+                                </>
                                 )}
                             </div>
                         )}
