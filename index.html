@@ -922,6 +922,18 @@
         const { useState, useEffect, useRef } = React;
 
         const API_BASE_URL = "https://otp-2-fos4.onrender.com";
+        const ACCESS_TOKEN_STORAGE_KEY = "otp_access_token";
+        const REFRESH_TOKEN_STORAGE_KEY = "otp_refresh_token";
+
+        const readStoredToken = (key) => localStorage.getItem(key) || "";
+        const writeStoredToken = (key, value) => {
+            if (value) localStorage.setItem(key, value);
+            else localStorage.removeItem(key);
+        };
+        const clearStoredTokens = () => {
+            localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+            localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+        };
 
         const App = () => {
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -971,6 +983,111 @@
             localStorage.setItem('deferredNotifyMode', deferredNotifyMode);
             }, [deferredNotifyMode]);
 
+            const persistAuthTokens = (accessToken, refreshToken) => {
+                if (typeof accessToken !== "undefined") {
+                    writeStoredToken(ACCESS_TOKEN_STORAGE_KEY, accessToken);
+                }
+                if (typeof refreshToken !== "undefined") {
+                    writeStoredToken(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+                }
+            };
+
+            const getAuthHeaders = (extraHeaders = {}, keyOverride = apiKey, userIdOverride = userData?.id) => {
+                const headers = { ...(extraHeaders || {}) };
+                const accessToken = readStoredToken(ACCESS_TOKEN_STORAGE_KEY);
+                const refreshToken = readStoredToken(REFRESH_TOKEN_STORAGE_KEY);
+
+                if (accessToken && !headers.Authorization) {
+                    headers.Authorization = `Bearer ${accessToken}`;
+                }
+                if (refreshToken && !headers["X-Refresh-Token"]) {
+                    headers["X-Refresh-Token"] = refreshToken;
+                }
+                if (keyOverride && !headers["X-API-Key"]) {
+                    headers["X-API-Key"] = keyOverride;
+                }
+                if (userIdOverride && !headers["X-User-Id"]) {
+                    headers["X-User-Id"] = userIdOverride;
+                }
+                return headers;
+            };
+
+            const clearSession = (withNotification = true) => {
+                setLoggedIn(false);
+                setUserData(null);
+                setApiKey('');
+                localStorage.removeItem("apiKey");
+                localStorage.removeItem("userData");
+                clearStoredTokens();
+                if (withNotification) {
+                    showNotification('Вы вышли из аккаунта');
+                }
+            };
+
+            const refreshJwtSession = async () => {
+                const refreshToken = readStoredToken(REFRESH_TOKEN_STORAGE_KEY);
+                if (!refreshToken) {
+                    throw new Error("NO_REFRESH_TOKEN");
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+                    body: JSON.stringify({})
+                });
+
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (_) {
+                    data = {};
+                }
+
+                if (!response.ok || data.status !== "success") {
+                    throw new Error(data.error || "JWT refresh failed");
+                }
+
+                persistAuthTokens(data.access_token, data.refresh_token);
+                return data;
+            };
+
+            const apiFetch = async (url, options = {}, opts = {}) => {
+                const {
+                    retryOnAuth = true,
+                    keyOverride = apiKey,
+                    userIdOverride = userData?.id
+                } = opts;
+
+                const requestOptions = {
+                    credentials: "include",
+                    ...options,
+                    headers: getAuthHeaders(options.headers || {}, keyOverride, userIdOverride)
+                };
+
+                let response = await fetch(url, requestOptions);
+
+                const isAuthEndpoint = url.includes("/api/login") || url.includes("/api/auth/refresh");
+                if (
+                    retryOnAuth &&
+                    !isAuthEndpoint &&
+                    response.status === 401 &&
+                    readStoredToken(REFRESH_TOKEN_STORAGE_KEY)
+                ) {
+                    try {
+                        await refreshJwtSession();
+                        response = await fetch(url, {
+                            ...requestOptions,
+                            headers: getAuthHeaders(options.headers || {}, keyOverride, userIdOverride)
+                        });
+                    } catch (_) {
+                        clearSession(false);
+                    }
+                }
+
+                return response;
+            };
+
 
             const getDeferredJson = () => {
                 const deferred = buttons.deferred.map(b => {
@@ -986,12 +1103,11 @@
                 try {
                     const today = new Date().toISOString();
                     console.log(today);
-                    const response = await fetch(`${API_BASE_URL}/api/sv/operators`, {
-                        headers: {
-                            'X-API-Key': apiKey,
-                            'X-User-Id': userId
-                        }
-                    });
+                    const response = await apiFetch(
+                        `${API_BASE_URL}/api/sv/operators`,
+                        { headers: {} },
+                        { keyOverride: apiKey, userIdOverride: userId }
+                    );
                     const data = await response.json();
                     if (data.status === 'success') {
                         setOperators(data.operators);
@@ -1008,9 +1124,9 @@
             
             useEffect(() => {
                 if (userData && userData.role === 'sv' && selectedOperator) {
-                    fetchActivityLogs(userData.apiKey, userData.id, selectedOperator);  // Загружать логи для выбранного оператора
+                    fetchActivityLogs(apiKey, userData.id, selectedOperator);  // Загружать логи для выбранного оператора
                 }
-            }, [selectedOperator, userData]);
+            }, [selectedOperator, userData, apiKey]);
 
             useEffect(() => {
                 document.body.className = theme === 'dark' ? 'dark' : '';
@@ -1018,20 +1134,32 @@
             }, [theme]);
             
             useEffect(() => {
-                const savedApiKey = localStorage.getItem("apiKey");
+                const savedApiKey = localStorage.getItem("apiKey") || "";
                 const savedUserData = localStorage.getItem("userData");
-                if (savedApiKey && savedUserData) {
-                    setApiKey(savedApiKey);
-                    setUserData(JSON.parse(savedUserData));
-                    setLoggedIn(true);
-                    fetchActiveOperators(savedApiKey);
+                const hasStoredTokens = !!readStoredToken(ACCESS_TOKEN_STORAGE_KEY) || !!readStoredToken(REFRESH_TOKEN_STORAGE_KEY);
+
+                if (!savedUserData || (!savedApiKey && !hasStoredTokens)) {
+                    return;
+                }
+
+                try {
                     const parsedUser = JSON.parse(savedUserData);
-                    if (parsedUser.role ==="sv"){
-                        fetchOperators(savedApiKey, parsedUser.id);
+                    const restoredApiKey = savedApiKey || parsedUser.apiKey || "";
+
+                    setApiKey(restoredApiKey);
+                    setUserData(parsedUser);
+                    setLoggedIn(true);
+                    fetchActiveOperators(restoredApiKey);
+
+                    if (parsedUser.role === "sv") {
+                        fetchOperators(restoredApiKey, parsedUser.id);
                         setCurrentTab('activity');
                     } else {
-                        fetchActivityLogs(savedApiKey, parsedUser.id, parsedUser.id, true);
+                        fetchActivityLogs(restoredApiKey, parsedUser.id, parsedUser.id, true);
                     }
+                } catch (_) {
+                    localStorage.removeItem("userData");
+                    clearStoredTokens();
                 }
             }, []);
             
@@ -1104,36 +1232,49 @@
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/login`, {
                         method: 'POST',
+                        credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ login: loginValue, password: passwordValue })
                     });
-            
-                    const data = await res.json();
+             
+                    let data = {};
+                    try {
+                        data = await res.json();
+                    } catch (_) {
+                        data = {};
+                    }
             
                     if (res.ok && data.status === 'success') {
-                        const user = { id: data.id, name: data.name, role: data.role, isActive: false };
-                        setApiKey(data.apiKey);
+                        const payloadUser = data.user || { id: data.id, name: data.name, role: data.role };
+                        const nextApiKey = data.apiKey || '';
+                        const user = { id: payloadUser.id, name: payloadUser.name, role: payloadUser.role, isActive: false, apiKey: nextApiKey };
+                        persistAuthTokens(data.access_token, data.refresh_token);
+                        setApiKey(nextApiKey);
                         setUserData(user);
                         console.log("USER OBJECT:", user);
             
                         setLoggedIn(true);
                         showNotification('Вход успешен!');
-                        localStorage.setItem("apiKey", data.apiKey);
+                        if (nextApiKey) {
+                            localStorage.setItem("apiKey", nextApiKey);
+                        } else {
+                            localStorage.removeItem("apiKey");
+                        }
                         localStorage.setItem("userData", JSON.stringify(user));
             
-                        fetchActiveOperators(data.apiKey);
+                        fetchActiveOperators(nextApiKey);
             
                         // 🔍 Логируем роль
                         console.log("ROLE FROM BACKEND:", user.role);
             
                         if (user && user.role && user.role.toLowerCase() === "sv") {
-                            fetchOperators(data.apiKey, data.id);
+                            fetchOperators(nextApiKey, user.id);
                             setCurrentTab('activity');
                         } else {
                             console.log("⛔ fetchOperators НЕ вызван, роль:", user.role);
                         }
             
-                        await fetchActivityLogs(data.apiKey, data.id, data.id, true);
+                        await fetchActivityLogs(nextApiKey, user.id, user.id, true);
             
                     } else {
                         showNotification(data.error || 'Ошибка входа');
@@ -1147,9 +1288,11 @@
 
             const fetchUserProfile = async (userId) => {
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/user/profile?user_id=${userId}`, {
-                        headers: { 'X-API-Key': apiKey }
-                    });
+                    const res = await apiFetch(
+                        `${API_BASE_URL}/api/user/profile?user_id=${userId}`,
+                        { headers: {} },
+                        { keyOverride: apiKey, userIdOverride: userId }
+                    );
                     const data = await res.json();
                     if (res.ok && data.status === 'success') {
                         setUserData(prev => ({ ...prev, isActive: data.profile.is_active }));
@@ -1159,26 +1302,36 @@
                 }
             };
 
-            const handleLogout = () => {
-                setLoggedIn(false);
-                setUserData(null);
-                setApiKey('');
-                localStorage.removeItem("apiKey");
-                localStorage.removeItem("userData");
+            const handleLogout = async () => {
+                try {
+                    await apiFetch(
+                        `${API_BASE_URL}/api/logout`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({})
+                        },
+                        { retryOnAuth: false, keyOverride: apiKey, userIdOverride: userData?.id }
+                    );
+                } catch (_) {
+                    // ignore logout transport errors and clear local session anyway
+                }
+                clearSession(false);
                 showNotification('Вы вышли из аккаунта');
             };
 
             const toggleActive = async (newStatus) => {
                 setIsTogglingActive(true);
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/user/toggle_active`, {
+                    const res = await apiFetch(`${API_BASE_URL}/api/user/toggle_active`, {
                         method: 'POST',
                         headers: { 
-                            'Content-Type': 'application/json',
-                            'X-API-Key': apiKey,
-                            'X-User-Id': userData.id
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ status: newStatus })
+                    }, {
+                        keyOverride: apiKey,
+                        userIdOverride: userData?.id
                     });
                     const data = await res.json();
                     if (res.ok && (data.status === 'success' || data.status === 'unchanged')) {
@@ -1198,9 +1351,11 @@
             const fetchActiveOperators = async (key) => {
                 setIsFetchingOperators(true);
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/active_operators`, {
-                        headers: { 'X-API-Key': key }
-                    });
+                    const res = await apiFetch(
+                        `${API_BASE_URL}/api/active_operators`,
+                        { headers: {} },
+                        { keyOverride: key }
+                    );
                     const data = await res.json();
                     if (res.ok && data.status === 'success') {
                         setActiveOperators(data.operators);
@@ -1216,12 +1371,11 @@
             const generateReport = async () => {
                 setIsGeneratingReport(true);
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/report/monthly?month=${month}`, {
-                        headers: { 
-                            'X-API-Key': apiKey,
-                            'X-User-Id': userData.id
-                        }
-                    });
+                    const res = await apiFetch(
+                        `${API_BASE_URL}/api/report/monthly?month=${month}`,
+                        { headers: {} },
+                        { keyOverride: apiKey, userIdOverride: userData?.id }
+                    );
                     if (res.ok) {
                         const blob = await res.blob();
                         const url = window.URL.createObjectURL(blob);
@@ -1242,19 +1396,18 @@
                 setIsGeneratingReport(false);
             };
 
-            const fetchActivityLogs = async (key = apiKey, userId = userData?.id, operatorId = userData.id, updateStatus = false) => {
+            const fetchActivityLogs = async (key = apiKey, userId = userData?.id, operatorId = userData?.id, updateStatus = false) => {
               try {
                 const dateToFormat = new Date();
                 const year = dateToFormat.getFullYear();
                 const month = String(dateToFormat.getMonth() + 1).padStart(2, '0'); // Месяцы начинаются с 0
                 const day = String(dateToFormat.getDate()).padStart(2, '0');
                 const today = `${year}-${month}-${day}`;
-                const res = await fetch(`${API_BASE_URL}/api/operator/activity?operator_id=${operatorId}&date=${today}`, {
-                  headers: { 
-                    'X-API-Key': key,
-                    'X-User-Id': userId
-                  }
-                });
+                const res = await apiFetch(
+                  `${API_BASE_URL}/api/operator/activity?operator_id=${operatorId}&date=${today}`,
+                  { headers: {} },
+                  { keyOverride: key, userIdOverride: userId }
+                );
                 const data = await res.json();
                 if (res.ok && data.status === 'success') {
                   setActivityLogs(data.logs);
@@ -1274,7 +1427,7 @@
             };
 
             useEffect(() => {
-                if (currentTab === 'activity' && userData.role === 'operator') {
+                if (currentTab === 'activity' && userData?.role === 'operator') {
                     fetchActivityLogs();
                 }
             }, [currentTab]);
