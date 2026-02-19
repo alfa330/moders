@@ -1350,6 +1350,7 @@
 
             const fetchActiveOperators = async (key) => {
                 setIsFetchingOperators(true);
+                let operators = null;
                 try {
                     const res = await apiFetch(
                         `${API_BASE_URL}/api/active_operators`,
@@ -1358,7 +1359,8 @@
                     );
                     const data = await res.json();
                     if (res.ok && data.status === 'success') {
-                        setActiveOperators(data.operators);
+                        operators = Array.isArray(data.operators) ? data.operators : [];
+                        setActiveOperators(operators);
                     } else {
                         showNotification(data.error || 'Ошибка загрузки операторов');
                     }
@@ -1366,6 +1368,7 @@
                     showNotification('Ошибка сети');
                 }
                 setIsFetchingOperators(false);
+                return operators;
             };
 
             const generateReport = async () => {
@@ -1465,12 +1468,12 @@
                     return;
                 }
 
-                await fetchActiveOperators(apiKey);
+                const operatorsFromRequest = await fetchActiveOperators(apiKey);
+                const operatorsSnapshot = operatorsFromRequest ?? activeOperators;
 
-                setTimeout(() => {
                     const userName = userData?.name;
 
-                    const currentOp = activeOperators.find(op => op.id === userData.id);
+                    const currentOp = operatorsSnapshot.find(op => String(op.id) === String(userData.id));
 
                     if (!currentOp) {
                         showNotification('Переведите статус в Активный что бы делить!');
@@ -1480,7 +1483,7 @@
                     // берём его направление
                     const userDirId = currentOp.direction_id;
 
-                    const activeOpNames = activeOperators
+                    const activeOpNames = operatorsSnapshot
                         .filter(a => a.direction_id === userDirId)
                         .map(a => a.name);
 
@@ -1514,7 +1517,6 @@
                         pending: [...prev.pending, ...newBtns]
                     }));
                     showNotification(`Добавлено тикетов: ${newBtns.length}`);
-                }, 200);
             };
 
             const addSingleDeferredButton = () => {
@@ -1951,7 +1953,8 @@
 
             const divideButtons = async () => {
               setIsDividing(true);
-              await fetchActiveOperators(apiKey);
+              const operatorsFromRequest = await fetchActiveOperators(apiKey);
+              const operatorsSnapshot = operatorsFromRequest ?? activeOperators;
             
               const start = parseInt(startButton);
               if (isNaN(start) || start < 1) {
@@ -1961,7 +1964,7 @@
               }
             
               // находим текущего оператора в списке
-              const currentOp = activeOperators.find(op => op.id === userData.id);
+              const currentOp = operatorsSnapshot.find(op => String(op.id) === String(userData.id));
             
               if (!currentOp) {
                 showNotification('Переведите статус в Активный что бы делить!');
@@ -1973,7 +1976,7 @@
               const dirId = currentOp.direction_id;
             
               // фильтруем только тех, у кого совпадает направление
-              const filteredOps = activeOperators.filter(op => op.direction_id === dirId);
+              const filteredOps = operatorsSnapshot.filter(op => op.direction_id === dirId);
             
               if (filteredOps.length === 0) {
                 showNotification('Нет активных операторов в вашем направлении!');
